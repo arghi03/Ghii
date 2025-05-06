@@ -1,63 +1,69 @@
 import javax.swing.*;
-import java.awt.*;
 
 public class Login extends JFrame {
+    private JTextField emailField;
+    private JPasswordField passwordField;
+    private JButton loginButton, registerButton;
+    private UserDAO userDAO;
+
     public Login() {
+        userDAO = new UserDAO(DBConnection.getConnection());
+
         setTitle("Login");
-        setSize(300, 250);
+        setSize(400, 200);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        JLabel namaLabel = new JLabel("Nama:");
-        JTextField namaField = new JTextField(20);
-        JLabel emailLabel = new JLabel("Email:");
-        JTextField emailField = new JTextField(20);
-        JLabel passwordLabel = new JLabel("Password:");
-        JPasswordField passwordField = new JPasswordField(20);
-        JButton loginBtn = new JButton("Login");
-        JButton registerBtn = new JButton("Register");
-
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.add(namaLabel);
-        panel.add(namaField);
-        panel.add(emailLabel);
+
+        emailField = new JTextField(20);
+        passwordField = new JPasswordField(20);
+        loginButton = new JButton("Login");
+        registerButton = new JButton("Register");
+
+        panel.add(new JLabel("Email:"));
         panel.add(emailField);
-        panel.add(passwordLabel);
+        panel.add(new JLabel("Password:"));
         panel.add(passwordField);
-        panel.add(loginBtn);
-        panel.add(registerBtn);
+        panel.add(loginButton);
+        panel.add(registerButton);
 
         add(panel);
 
-        loginBtn.addActionListener(e -> {
-            String nama = namaField.getText().trim();
-            String email = emailField.getText().trim();
-            String password = new String(passwordField.getPassword());
-
-            if (nama.isEmpty() || email.isEmpty() || password.isEmpty()) {
-                System.out.println("Validasi gagal: Field wajib kosong");
-                JOptionPane.showMessageDialog(this, "Nama, Email, dan Password harus diisi!");
-                return;
-            }
-
-            System.out.println("Mencoba login: " + nama + ", " + email);
-            boolean success = UserDAO.login(nama, email, password);
-            if (success) {
-                System.out.println("Login sukses untuk " + nama);
-                JOptionPane.showMessageDialog(this, "Login berhasil!");
-                new Dashboard(nama, email).setVisible(true);
+        loginButton.addActionListener(e -> {
+            User user = userDAO.login(emailField.getText(), new String(passwordField.getPassword()));
+            if (user != null) {
+                System.out.println("Login berhasil untuk email: " + user.getEmail() + ", isVerified: " + user.isVerified());
+                JOptionPane.showMessageDialog(this, "Login berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                if (user.isVerified()) {
+                    System.out.println("User sudah terverifikasi, navigasi ke Dashboard");
+                    new Dashboard(user.getNama(), user.getEmail(), user.getIdRole()).setVisible(true);
+                } else {
+                    System.out.println("User belum terverifikasi, navigasi ke VerificationScreen");
+                    String otpCode = EmailService.sendOTP(user.getEmail());
+                    if (otpCode != null) {
+                        userDAO.saveOtp(user, otpCode);
+                        new VerificationScreen(user).setVisible(true);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Gagal mengirim OTP! Cek koneksi atau konfigurasi email.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
                 dispose();
             } else {
-                System.out.println("Login gagal untuk " + nama);
-                JOptionPane.showMessageDialog(this, "Nama, Email, atau Password salah.");
+                System.out.println("Login gagal untuk email: " + emailField.getText());
+                JOptionPane.showMessageDialog(this, "Login gagal!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        registerBtn.addActionListener(e -> {
-            System.out.println("Pindah ke form registrasi");
+        registerButton.addActionListener(e -> {
+            System.out.println("Navigasi ke halaman Register");
             new Register().setVisible(true);
             dispose();
         });
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(() -> new Login().setVisible(true));
     }
 }
