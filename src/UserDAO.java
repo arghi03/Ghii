@@ -74,7 +74,7 @@ public class UserDAO {
         }
     }
 
-    public User login(String email, String password) {
+    public User login(String nama, String password) {
         if (conn == null) {
             System.err.println("Koneksi database null! Tidak bisa login.");
             return null;
@@ -82,9 +82,9 @@ public class UserDAO {
 
         String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, p.id_role, u.otp_code, u.otp_expiry " +
                      "FROM users u JOIN profile p ON u.id_user = p.id_user " +
-                     "WHERE u.email = ? AND u.password = ?";
+                     "WHERE u.nama = ? AND u.password = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, email);
+            stmt.setString(1, nama);
             stmt.setString(2, password);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
@@ -103,10 +103,10 @@ public class UserDAO {
                 if (otpExpiryStr != null) {
                     user.setOtpExpiry(LocalDateTime.parse(otpExpiryStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
                 }
-                System.out.println("Login berhasil untuk: " + email + ", isVerified: " + user.isVerified());
+                System.out.println("Login berhasil untuk: " + nama + ", isVerified: " + user.isVerified());
                 return user;
             } else {
-                System.out.println("User tidak ditemukan untuk email: " + email);
+                System.out.println("User tidak ditemukan untuk nama: " + nama);
                 return null;
             }
         } catch (SQLException e) {
@@ -152,6 +152,46 @@ public class UserDAO {
             }
         } catch (SQLException e) {
             System.err.println("Error retrieving user by name and email: " + e.getMessage());
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public User getUserByName(String nama) { // Tambah method baru
+        if (conn == null) {
+            System.err.println("Koneksi database null! Tidak bisa getUserByName.");
+            return null;
+        }
+
+        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, p.id_role, u.otp_code, u.otp_expiry " +
+                     "FROM users u JOIN profile p ON u.id_user = p.id_user " +
+                     "WHERE u.nama = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, nama);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                User user = new User(
+                    rs.getInt("id_user"),
+                    rs.getString("nama"),
+                    rs.getString("nim"),
+                    rs.getString("email"),
+                    rs.getString("nomor_telepon"),
+                    rs.getString("password"),
+                    rs.getInt("id_role"),
+                    rs.getBoolean("is_verified")
+                );
+                user.setOtpCode(rs.getString("otp_code"));
+                String otpExpiryStr = rs.getString("otp_expiry");
+                if (otpExpiryStr != null) {
+                    user.setOtpExpiry(LocalDateTime.parse(otpExpiryStr, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
+                }
+                return user;
+            } else {
+                System.out.println("User tidak ditemukan untuk nama: " + nama);
+                return null;
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving user by name: " + e.getMessage());
             e.printStackTrace();
             return null;
         }

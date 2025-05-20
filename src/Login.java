@@ -1,7 +1,7 @@
 import javax.swing.*;
 
 public class Login extends JFrame {
-    private JTextField emailField;
+    private JTextField nameField;
     private JPasswordField passwordField;
     private JButton loginButton, registerButton;
     private UserDAO userDAO;
@@ -17,13 +17,13 @@ public class Login extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
 
-        emailField = new JTextField(20);
+        nameField = new JTextField(20);
         passwordField = new JPasswordField(20);
         loginButton = new JButton("Login");
         registerButton = new JButton("Register");
 
-        panel.add(new JLabel("Email:"));
-        panel.add(emailField);
+        panel.add(new JLabel("Nama:"));
+        panel.add(nameField);
         panel.add(new JLabel("Password:"));
         panel.add(passwordField);
         panel.add(loginButton);
@@ -32,9 +32,9 @@ public class Login extends JFrame {
         add(panel);
 
         loginButton.addActionListener(e -> {
-            User user = userDAO.login(emailField.getText(), new String(passwordField.getPassword()));
+            User user = userDAO.login(nameField.getText(), new String(passwordField.getPassword()));
             if (user != null) {
-                System.out.println("Login berhasil untuk email: " + user.getEmail() + ", isVerified: " + user.isVerified());
+                System.out.println("Login berhasil untuk nama: " + user.getNama() + ", isVerified: " + user.isVerified());
                 JOptionPane.showMessageDialog(this, "Login berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
                 if (user.isVerified()) {
                     System.out.println("User sudah terverifikasi, navigasi ke Dashboard");
@@ -51,7 +51,7 @@ public class Login extends JFrame {
                 }
                 dispose();
             } else {
-                System.out.println("Login gagal untuk email: " + emailField.getText());
+                System.out.println("Login gagal untuk nama: " + nameField.getText());
                 JOptionPane.showMessageDialog(this, "Login gagal!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });

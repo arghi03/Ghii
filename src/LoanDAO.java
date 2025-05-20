@@ -51,11 +51,7 @@ public class LoanDAO {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, status);
             stmt.setInt(2, approvedBy);
-            if ("approved".equals(status)) {
-                stmt.setInt(3, idLoan);
-            } else {
-                stmt.setInt(3, idLoan);
-            }
+            stmt.setInt(3, idLoan);
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {
@@ -70,7 +66,6 @@ public class LoanDAO {
         String username;
         String bookTitle;
 
-        // Ambil nama user
         try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
             stmtUser.setInt(1, idUser);
             ResultSet rsUser = stmtUser.executeQuery();
@@ -85,7 +80,6 @@ public class LoanDAO {
             return false;
         }
 
-        // Ambil judul buku
         try (PreparedStatement stmtBook = conn.prepareStatement(sqlBook)) {
             stmtBook.setInt(1, idBook);
             ResultSet rsBook = stmtBook.executeQuery();
@@ -100,7 +94,6 @@ public class LoanDAO {
             return false;
         }
 
-        // Insert ke tabel loans dengan username dan book_title
         String sql = "INSERT INTO loans (id_user, id_book, status, approved_by, request_date, username, book_title) " +
                      "VALUES (?, ?, 'pending', NULL, NOW(), ?, ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
@@ -112,6 +105,19 @@ public class LoanDAO {
             return affectedRows > 0;
         } catch (SQLException e) {
             System.err.println("Error adding loan: " + e.getMessage());
+            return false;
+        }
+    }
+
+    public boolean isLoanApproved(int userId, int bookId) {
+        String sql = "SELECT status FROM loans WHERE id_user = ? AND id_book = ? AND status = 'approved'";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            stmt.setInt(2, bookId);
+            ResultSet rs = stmt.executeQuery();
+            return rs.next();
+        } catch (SQLException e) {
+            System.err.println("Error checking loan status: " + e.getMessage());
             return false;
         }
     }
