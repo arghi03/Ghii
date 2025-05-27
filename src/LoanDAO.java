@@ -31,6 +31,7 @@ public class LoanDAO {
                     rs.getInt("approved_by"),
                     requestDate,
                     approvedDate,
+                    null, // returnDate
                     rs.getString("username"),
                     rs.getString("book_title")
                 ));
@@ -61,24 +62,8 @@ public class LoanDAO {
     }
 
     public boolean addLoan(int idUser, int idBook) {
-        String sqlUser = "SELECT nama FROM users WHERE id_user = ?";
         String sqlBook = "SELECT title FROM books WHERE id_book = ?";
-        String username;
         String bookTitle;
-
-        try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
-            stmtUser.setInt(1, idUser);
-            ResultSet rsUser = stmtUser.executeQuery();
-            if (rsUser.next()) {
-                username = rsUser.getString("nama");
-            } else {
-                System.err.println("User dengan id " + idUser + " tidak ditemukan!");
-                return false;
-            }
-        } catch (SQLException e) {
-            System.err.println("Error fetching username: " + e.getMessage());
-            return false;
-        }
 
         try (PreparedStatement stmtBook = conn.prepareStatement(sqlBook)) {
             stmtBook.setInt(1, idBook);
@@ -94,13 +79,12 @@ public class LoanDAO {
             return false;
         }
 
-        String sql = "INSERT INTO loans (id_user, id_book, status, approved_by, request_date, username, book_title) " +
-                     "VALUES (?, ?, 'pending', NULL, NOW(), ?, ?)";
+        String sql = "INSERT INTO loans (id_user, id_book, status, approved_by, request_date, book_title) " +
+                     "VALUES (?, ?, 'pending', NULL, NOW(), ?)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, idUser);
             stmt.setInt(2, idBook);
-            stmt.setString(3, username);
-            stmt.setString(4, bookTitle);
+            stmt.setString(3, bookTitle);
             int affectedRows = stmt.executeUpdate();
             return affectedRows > 0;
         } catch (SQLException e) {

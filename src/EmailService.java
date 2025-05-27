@@ -4,8 +4,8 @@ import java.util.Properties;
 import java.util.Random;
 
 public class EmailService {
-    private static final String FROM_EMAIL = "literaspace25@gmail.com"; // Ganti sama email Gmail kamu
-    private static final String EMAIL_PASSWORD = "xtvsgqjxdyymgujv"; // Ganti sama App Password Gmail
+    private static final String FROM_EMAIL = "literaspace25@gmail.com"; 
+    private static final String EMAIL_PASSWORD = "evfkowedhpwoemsc"; 
 
     public static String sendOTP(String toEmail) {
         // Generate kode OTP (6 digit)
@@ -18,6 +18,7 @@ public class EmailService {
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.host", "smtp.gmail.com");
         props.put("mail.smtp.port", "587");
+        props.put("mail.debug", "true"); // Tambah debug buat lihat log SMTP
 
         // Buat session email
         Session session = Session.getInstance(props, new Authenticator() {
