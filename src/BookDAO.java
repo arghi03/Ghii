@@ -10,6 +10,8 @@ public class BookDAO {
         this.conn = conn;
         if (this.conn == null) {
             System.err.println("Koneksi database null saat inisialisasi BookDAO!");
+        } else {
+            System.out.println("Koneksi database berhasil diinisialisasi di BookDAO.");
         }
     }
 
@@ -74,7 +76,9 @@ public class BookDAO {
     public List<Book> getAllBooks() {
         List<Book> books = new ArrayList<>();
         String sql = "SELECT * FROM books";
+        System.out.println("Mencoba mengambil semua buku dari database...");
         try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            int count = 0;
             while (rs.next()) {
                 Book book = new Book(
                     rs.getInt("id_book"),
@@ -85,33 +89,46 @@ public class BookDAO {
                     rs.getFloat("rating")
                 );
                 books.add(book);
+                count++;
             }
+            System.out.println("Berhasil mengambil " + count + " buku dari database.");
         } catch (SQLException e) {
             System.err.println("Error fetching books: " + e.getMessage());
+            e.printStackTrace();
+        }
+        if (books.isEmpty()) {
+            System.out.println("Tidak ada buku yang ditemukan di database atau terjadi error.");
         }
         return books;
     }
 
     public int getTotalBooksCount() {
         String sql = "SELECT COUNT(*) AS total FROM books";
+        System.out.println("Mencoba menghitung total buku di database...");
         try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
             if (rs.next()) {
-                return rs.getInt("total");
+                int total = rs.getInt("total");
+                System.out.println("Total buku di database: " + total);
+                return total;
             }
         } catch (SQLException e) {
             System.err.println("Error fetching total books count: " + e.getMessage());
+            e.printStackTrace();
         }
+        System.out.println("Gagal menghitung total buku, mengembalikan 0.");
         return 0;
     }
 
     public List<Book> searchBooks(String keyword) {
         List<Book> books = new ArrayList<>();
         String sql = "SELECT * FROM books WHERE title LIKE ? OR author LIKE ?";
+        System.out.println("Mencoba mencari buku dengan keyword: " + keyword);
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             String searchTerm = "%" + keyword + "%";
             stmt.setString(1, searchTerm);
             stmt.setString(2, searchTerm);
             ResultSet rs = stmt.executeQuery();
+            int count = 0;
             while (rs.next()) {
                 Book book = new Book(
                     rs.getInt("id_book"),
@@ -122,9 +139,15 @@ public class BookDAO {
                     rs.getFloat("rating")
                 );
                 books.add(book);
+                count++;
             }
+            System.out.println("Ditemukan " + count + " buku dengan keyword: " + keyword);
         } catch (SQLException e) {
             System.err.println("Error searching books: " + e.getMessage());
+            e.printStackTrace();
+        }
+        if (books.isEmpty()) {
+            System.out.println("Tidak ada buku yang ditemukan dengan keyword: " + keyword);
         }
         return books;
     }
@@ -165,7 +188,6 @@ public class BookDAO {
         return loans;
     }
 
-    // Method baru untuk ambil buku berdasarkan ID
     public Book getBookById(int idBook) {
         if (conn == null) {
             System.err.println("Koneksi database null! Tidak bisa ambil buku.");
@@ -173,11 +195,12 @@ public class BookDAO {
         }
 
         String sql = "SELECT * FROM books WHERE id_book = ?";
+        System.out.println("Mencoba mengambil buku dengan id: " + idBook);
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, idBook);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                return new Book(
+                Book book = new Book(
                     rs.getInt("id_book"),
                     rs.getString("title"),
                     rs.getString("author"),
@@ -185,14 +208,18 @@ public class BookDAO {
                     rs.getString("book_file_path"),
                     rs.getFloat("rating")
                 );
+                System.out.println("Buku ditemukan: " + book.getTitle());
+                return book;
+            } else {
+                System.out.println("Buku dengan id " + idBook + " tidak ditemukan.");
             }
         } catch (SQLException e) {
             System.err.println("Error fetching book by ID: " + e.getMessage());
+            e.printStackTrace();
         }
         return null;
     }
 
-    // Method untuk update rating
     public boolean updateBookRating(int idBook, float newRating) {
         if (conn == null) {
             System.err.println("Koneksi database null! Tidak bisa update rating.");
@@ -220,7 +247,6 @@ public class BookDAO {
         }
     }
 
-    // Method untuk ambil rating rata-rata
     public float getBookRating(int idBook) {
         if (conn == null) {
             System.err.println("Koneksi database null! Tidak bisa ambil rating.");

@@ -10,12 +10,18 @@ public class DBConnection {
         Connection conn = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver"); // Memuat driver
+            System.out.println("Driver JDBC MySQL berhasil dimuat.");
             conn = DriverManager.getConnection(url, user, password);
-            System.out.println("Koneksi berhasil!");
+            System.out.println("Koneksi ke database berhasil! URL: " + url);
         } catch (ClassNotFoundException e) {
             System.err.println("Driver JDBC MySQL tidak ditemukan: " + e.getMessage());
+            e.printStackTrace();
         } catch (SQLException e) {
             System.err.println("Koneksi gagal: " + e.getMessage());
+            e.printStackTrace();
+        }
+        if (conn == null) {
+            System.err.println("Koneksi database mengembalikan null!");
         }
         return conn;
     }

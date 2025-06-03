@@ -9,347 +9,312 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.awt.Desktop;
-import java.awt.event.ActionEvent;
+// import java.awt.event.ActionEvent; // Tidak terpakai secara eksplisit
 
 public class Dashboard extends JFrame {
     private UserDAO userDAO;
-    private User user;
+    private User user; // User yang sedang login
     private JLabel welcomeLabel;
     private JTextField searchField;
     private JTable bookTable;
     private BookDAO bookDAO;
+    private FavoriteDAO favoriteDAO; // Pastikan ini sudah diinisialisasi
 
     public Dashboard(String nama, String email, int idRole) {
-        // Inisialisasi user dan koneksi
         Connection conn = null;
         try {
             conn = DBConnection.getConnection();
+            if (conn == null) {
+                throw new SQLException("Koneksi ke database gagal didapatkan dari DBConnection.");
+            }
             userDAO = new UserDAO(conn);
             bookDAO = new BookDAO(conn);
+            favoriteDAO = new FavoriteDAO(conn); // Inisialisasi FavoriteDAO di sini
+
             this.user = userDAO.getUserByNameAndEmail(nama, email);
+
             if (this.user == null) {
-                throw new Exception("User tidak ditemukan!");
+                JOptionPane.showMessageDialog(this, "Gagal memuat data user. User tidak ditemukan dengan nama: " + nama + " dan email: " + email, "Error User", JOptionPane.ERROR_MESSAGE);
+                SwingUtilities.invokeLater(() -> new Login().setVisible(true));
+                dispose();
+                return;
             }
+            if (this.user.getIdRole() != idRole) {
+                System.out.println("Peringatan: idRole dari DB (" + this.user.getIdRole() + ") berbeda dengan idRole dari argumen (" + idRole + "). Menggunakan dari DB.");
+            }
+
         } catch (Exception e) {
-            System.err.println("Error connecting to database or fetching user: " + e.getMessage());
+            System.err.println("Error initializing Dashboard: " + e.getMessage());
             e.printStackTrace();
-            JOptionPane.showMessageDialog(this, "Gagal terhubung ke database atau memuat user!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal memuat Dashboard: " + e.getMessage(), "Error Kritis", JOptionPane.ERROR_MESSAGE);
+            SwingUtilities.invokeLater(() -> new Login().setVisible(true));
             dispose();
-            new Login().setVisible(true);
             return;
         }
 
         setTitle("Dashboard Perpustakaan - " + user.getNama());
-        setSize(800, 600);
+        setSize(850, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
 
-        // Panel utama
-        JPanel mainPanel = new JPanel();
-        mainPanel.setLayout(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        mainPanel.setBackground(new Color(240, 242, 245));
 
-        // Label sambutan
-        welcomeLabel = new JLabel("Selamat Datang, " + user.getNama() + " (Role ID: " + user.getIdRole() + ")!", SwingConstants.CENTER);
+        JPanel topPanel = new JPanel(new BorderLayout(10,5));
+        topPanel.setOpaque(false);
+
+        welcomeLabel = new JLabel("Selamat Datang, " + user.getNama() + "!", SwingConstants.LEFT);
         welcomeLabel.setFont(new Font("Arial", Font.BOLD, 20));
-        mainPanel.add(welcomeLabel, BorderLayout.NORTH);
+        welcomeLabel.setBorder(BorderFactory.createEmptyBorder(0,0,10,0));
+        topPanel.add(welcomeLabel, BorderLayout.NORTH);
 
-        // Panel pencarian
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        searchField = new JTextField(20);
+        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        searchPanel.setOpaque(false);
+        searchField = new JTextField(25);
+        searchField.setFont(new Font("Arial", Font.PLAIN, 14));
         JButton searchButton = new JButton("Cari Buku");
-        searchPanel.add(new JLabel("Cari: "));
+        searchButton.setFont(new Font("Arial", Font.PLAIN, 12));
+
+        searchPanel.add(new JLabel("Cari Buku:"));
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
-        mainPanel.add(searchPanel, BorderLayout.NORTH);
+        topPanel.add(searchPanel, BorderLayout.CENTER);
+        mainPanel.add(topPanel, BorderLayout.NORTH);
 
-        // Tabel buku
         String[] columns = {"ID", "Judul", "Penulis", "Sampul", "Rating", "Aksi"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 5; // Hanya kolom "Aksi" yang bisa diedit
+                return false; 
             }
-
             @Override
             public Class<?> getColumnClass(int columnIndex) {
-                if (columnIndex == 3) { // Kolom "Sampul"
-                    return ImageIcon.class;
-                } else if (columnIndex == 5) { // Kolom "Aksi"
-                    return JPanel.class;
-                }
+                if (columnIndex == 3) return ImageIcon.class;
+                if (columnIndex == 5) return JPanel.class; 
                 return super.getColumnClass(columnIndex);
             }
         };
         bookTable = new JTable(model);
-        bookTable.setRowHeight(50);
-        bookTable.getColumnModel().getColumn(5).setPreferredWidth(200);
+        bookTable.setRowHeight(60);
+        bookTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
+        bookTable.setFont(new Font("Arial", Font.PLAIN, 12));
 
-        // Custom renderer untuk kolom "Sampul"
-        bookTable.getColumnModel().getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
+        TableColumnModel columnModelTable = bookTable.getColumnModel();
+        columnModelTable.getColumn(0).setPreferredWidth(40);
+        columnModelTable.getColumn(1).setPreferredWidth(200);
+        columnModelTable.getColumn(2).setPreferredWidth(150);
+        columnModelTable.getColumn(3).setPreferredWidth(70);
+        columnModelTable.getColumn(4).setPreferredWidth(60);
+        columnModelTable.getColumn(5).setPreferredWidth(230); 
+
+        columnModelTable.getColumn(3).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 JLabel label = new JLabel();
-                if (value instanceof ImageIcon) {
-                    label.setIcon((ImageIcon) value);
-                } else {
-                    label.setText("Gambar Tidak Ada");
-                }
+                if (value instanceof ImageIcon) label.setIcon((ImageIcon) value);
+                else label.setText("N/A");
                 label.setHorizontalAlignment(SwingConstants.CENTER);
                 return label;
             }
         });
-
-        // Custom renderer untuk kolom "Rating"
-        bookTable.getColumnModel().getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
+        columnModelTable.getColumn(4).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 JLabel label = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                if (value instanceof Float) {
-                    label.setText(String.format("%.1f/5", (Float) value));
-                } else {
-                    label.setText("N/A");
-                }
+                if (value instanceof Float) label.setText(String.format("%.1f", (Float) value));
+                else label.setText("-");
                 label.setHorizontalAlignment(SwingConstants.CENTER);
                 return label;
             }
         });
-
-        // Custom renderer untuk kolom "Aksi"
-        bookTable.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+        columnModelTable.getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                return (JPanel) value;
-            }
-        });
-
-        // Custom editor untuk kolom "Aksi"
-        bookTable.getColumnModel().getColumn(5).setCellEditor(new DefaultCellEditor(new JTextField()) {
-            private JPanel panel;
-            private JButton previewButton;
-            private JButton borrowButton;
-            private JButton readButton;
-
-            @Override
-            public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-                panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-                previewButton = new JButton("Preview");
-                borrowButton = new JButton("Pinjam");
-                readButton = new JButton("Baca");
-
-                previewButton.setFont(new Font("Arial", Font.PLAIN, 10));
-                borrowButton.setFont(new Font("Arial", Font.PLAIN, 10));
-                readButton.setFont(new Font("Arial", Font.PLAIN, 10));
-
-                int idBook = (int) table.getValueAt(row, 0);
-                Book book = getBookById(idBook);
-
-                // Action untuk Preview
-                previewButton.addActionListener(e -> {
-                    new BookDetailScreen(idBook, bookDAO).setVisible(true);
-                    stopCellEditing();
-                });
-
-                // Action untuk Pinjam
-                borrowButton.addActionListener(e -> {
-                    try (Connection connection = bookDAO.getConnection();
-                         PreparedStatement stmt = connection.prepareStatement(
-                             "INSERT INTO loans (id_user, id_book, request_date, status) VALUES (?, ?, NOW(), 'borrowed')")) {
-                        stmt.setInt(1, user.getIdUser());
-                        stmt.setInt(2, idBook);
-                        int affectedRows = stmt.executeUpdate();
-                        if (affectedRows > 0) {
-                            JOptionPane.showMessageDialog(Dashboard.this, "Buku berhasil dipinjam!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                        } else {
-                            JOptionPane.showMessageDialog(Dashboard.this, "Gagal meminjam buku!", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    } catch (SQLException ex) {
-                        System.err.println("Error borrowing book: " + ex.getMessage());
-                        JOptionPane.showMessageDialog(Dashboard.this, "Gagal meminjam buku: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                    stopCellEditing();
-                });
-
-                // Action untuk Baca
-                readButton.addActionListener(e -> {
-                    if (book.getBookFilePath() != null && !book.getBookFilePath().isEmpty()) {
-                        try {
-                            File pdfFile = new File(book.getBookFilePath());
-                            if (pdfFile.exists()) {
-                                Desktop.getDesktop().open(pdfFile);
-                            } else {
-                                JOptionPane.showMessageDialog(Dashboard.this, "File PDF tidak ditemukan!", "Error", JOptionPane.ERROR_MESSAGE);
-                            }
-                        } catch (Exception ex) {
-                            System.err.println("Error opening PDF: " + ex.getMessage());
-                            JOptionPane.showMessageDialog(Dashboard.this, "Gagal membuka file PDF: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(Dashboard.this, "File PDF tidak tersedia untuk buku ini!", "Info", JOptionPane.INFORMATION_MESSAGE);
-                    }
-                    stopCellEditing();
-                });
-
-                panel.add(previewButton);
-                panel.add(borrowButton);
-                panel.add(readButton);
-                return panel;
-            }
-
-            @Override
-            public Object getCellEditorValue() {
-                return panel;
+                if (value instanceof JPanel) return (JPanel) value;
+                return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
             }
         });
 
         JScrollPane scrollPane = new JScrollPane(bookTable);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel tombol bawah (role-based)
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        JPanel bottomButtonPanel = new JPanel(new BorderLayout(0,10));
+        bottomButtonPanel.setOpaque(false);
+        JPanel roleSpecificButtonPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        roleSpecificButtonPanel.setOpaque(false);
 
         if (user.getIdRole() == 1) { // Admin
-            JButton verifyUsersButton = new JButton("Verifikasi User");
-            verifyUsersButton.addActionListener(e -> {
-                new VerificationListScreen(user);
-                dispose();
-            });
-            JButton viewReportsButton = new JButton("Lihat Laporan");
-            viewReportsButton.addActionListener(e -> {
-                JOptionPane.showMessageDialog(this, "Fitur laporan belum tersedia!", "Info", JOptionPane.INFORMATION_MESSAGE);
-            });
-            buttonPanel.add(verifyUsersButton);
-            buttonPanel.add(viewReportsButton);
+            JButton verifyUsersButton = createStyledButton("Verifikasi User");
+            verifyUsersButton.addActionListener(e -> new VerificationListScreen(user));
+            JButton viewReportsButton = createStyledButton("Lihat Laporan");
+            viewReportsButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Fitur laporan belum tersedia!", "Info", JOptionPane.INFORMATION_MESSAGE));
+            roleSpecificButtonPanel.add(verifyUsersButton);
+            roleSpecificButtonPanel.add(viewReportsButton);
         } else if (user.getIdRole() == 2) { // Supervisor
-            JButton addBookButton = new JButton("Tambah Buku");
-            addBookButton.addActionListener(e -> {
-                new AddBookScreen(user);
-                dispose();
-            });
-            JButton manageLoansButton = new JButton("Kelola Peminjaman");
-            manageLoansButton.addActionListener(e -> {
-                new LoanManagementScreen(user);
-                dispose();
-            });
-            buttonPanel.add(addBookButton);
-            buttonPanel.add(manageLoansButton);
-        } else { // User (idRole == 3)
-            JButton borrowBookButton = new JButton("Daftar Buku");
-            borrowBookButton.addActionListener(e -> {
-                new BookListScreen(user);
-                dispose();
-            });
-            buttonPanel.add(borrowBookButton);
+            JButton addBookButton = createStyledButton("Tambah Buku");
+            addBookButton.addActionListener(e -> new AddBookScreen(user));
+            JButton manageLoansButton = createStyledButton("Kelola Peminjaman");
+            manageLoansButton.addActionListener(e -> new LoanManagementScreen(user));
+            roleSpecificButtonPanel.add(addBookButton);
+            roleSpecificButtonPanel.add(manageLoansButton);
+        } else { // User (idRole == 3 atau lainnya)
+            JButton browseBooksButton = createStyledButton("Lihat Daftar Buku");
+            browseBooksButton.addActionListener(e -> new BookListScreen(user));
+            roleSpecificButtonPanel.add(browseBooksButton);
         }
+        bottomButtonPanel.add(roleSpecificButtonPanel, BorderLayout.WEST);
 
-        // Tombol tambahan
-        JButton profileButton = new JButton("Profil");
+        JPanel commonButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        commonButtonPanel.setOpaque(false);
+
+        JButton profileButton = createStyledButton("Profil Saya");
         profileButton.addActionListener(e -> {
-            User updatedUser = userDAO.getUserByNameAndEmail(user.getNama(), user.getEmail());
-            if (updatedUser != null) {
-                this.user = updatedUser;
-                new ProfileScreen(this.user);
-                dispose();
+            User latestUser = userDAO.getUserById(user.getIdUser());
+            if (latestUser != null) {
+                this.user = latestUser;
+                 new ProfileScreen(this.user);
             } else {
-                JOptionPane.showMessageDialog(this, "Gagal memuat profil!", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Gagal memuat profil, data user tidak ditemukan.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
-        JButton refreshButton = new JButton("Refresh");
-        refreshButton.addActionListener(e -> {
-            User updatedUser = userDAO.getUserByNameAndEmail(user.getNama(), user.getEmail());
-            if (updatedUser != null) {
-                this.user = updatedUser;
-                welcomeLabel.setText("Selamat Datang, " + user.getNama() + " (Role ID: " + user.getIdRole() + ")!");
-                revalidate();
-                repaint();
-                new Dashboard(user.getNama(), user.getEmail(), user.getIdRole()).setVisible(true);
-                dispose();
-            }
+        JButton myFavoritesButton = createStyledButton("Favorit Saya");
+        myFavoritesButton.addActionListener(e -> {
+            new MyFavoritesScreen(this.user); 
         });
+        
+        JButton loanHistoryButton = createStyledButton("Riwayat Peminjaman");
+        loanHistoryButton.addActionListener(e -> new LoanHistoryScreen(this.user));
 
-        JButton logoutButton = new JButton("Logout");
+        JButton refreshButton = createStyledButton("Refresh Data");
+        refreshButton.addActionListener(e -> refreshDashboardData());
+
+        JButton logoutButton = createStyledButton("Logout");
         logoutButton.addActionListener(e -> {
-            System.out.println("Logout: " + user.getNama());
-            dispose();
-            new Login().setVisible(true);
+            int confirm = JOptionPane.showConfirmDialog(this, "Anda yakin ingin logout?", "Konfirmasi Logout", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                System.out.println("Logout: " + user.getNama());
+                dispose();
+                new Login().setVisible(true);
+            }
         });
 
-        buttonPanel.add(profileButton);
-        buttonPanel.add(refreshButton);
-        buttonPanel.add(logoutButton);
-        mainPanel.add(buttonPanel, BorderLayout.SOUTH);
+        commonButtonPanel.add(profileButton);
+        commonButtonPanel.add(myFavoritesButton); 
+        commonButtonPanel.add(loanHistoryButton);
+        commonButtonPanel.add(refreshButton);
+        commonButtonPanel.add(logoutButton);
+        bottomButtonPanel.add(commonButtonPanel, BorderLayout.EAST);
+        mainPanel.add(bottomButtonPanel, BorderLayout.SOUTH);
 
-        // Action listener untuk pencarian
-        searchButton.addActionListener(e -> {
-            String keyword = searchField.getText().trim();
-            List<Book> books = bookDAO.searchBooks(keyword);
-            model.setRowCount(0); // Clear tabel
-            for (Book book : books) {
-                ImageIcon coverIcon = null;
+        searchButton.addActionListener(e -> searchBooks());
+        loadInitialBooks();
+        add(mainPanel);
+        setVisible(true);
+    }
+
+    private JButton createStyledButton(String text) {
+        JButton button = new JButton(text);
+        button.setFont(new Font("Arial", Font.PLAIN, 12));
+        return button;
+    }
+    
+    private void loadInitialBooks() {
+        System.out.println("Memuat semua buku ke dashboard...");
+        DefaultTableModel model = (DefaultTableModel) bookTable.getModel();
+        model.setRowCount(0);
+        List<Book> initialBooks = bookDAO.getAllBooks();
+        if (initialBooks.isEmpty()) System.out.println("Tidak ada buku yang dimuat ke dashboard.");
+        else System.out.println("Berhasil memuat " + initialBooks.size() + " buku ke dashboard.");
+        populateBookTable(initialBooks);
+    }
+
+    private void searchBooks() {
+        String keyword = searchField.getText().trim();
+        System.out.println("Mencari buku dengan keyword: " + keyword);
+        DefaultTableModel model = (DefaultTableModel) bookTable.getModel();
+        model.setRowCount(0);
+        List<Book> books = bookDAO.searchBooks(keyword);
+        if (books.isEmpty()) {
+            System.out.println("Tidak ada buku yang ditemukan untuk keyword: " + keyword);
+            JOptionPane.showMessageDialog(this, "Tidak ada buku yang cocok dengan kata kunci '" + keyword + "'.", "Pencarian Kosong", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            System.out.println("Ditemukan " + books.size() + " buku untuk keyword: " + keyword);
+        }
+        populateBookTable(books);
+    }
+
+    private void populateBookTable(List<Book> books) {
+        DefaultTableModel model = (DefaultTableModel) bookTable.getModel();
+        // FavoriteDAO sudah menjadi field instance, jadi bisa langsung dipakai
+
+        for (Book book : books) {
+            ImageIcon coverIcon = null;
+            if (book.getCoverImagePath() != null && !book.getCoverImagePath().isEmpty()) {
                 try {
-                    if (book.getCoverImagePath() != null && !book.getCoverImagePath().isEmpty()) {
-                        BufferedImage img = ImageIO.read(new File(book.getCoverImagePath()));
-                        Image scaledImg = img.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
+                    File imgFile = new File(book.getCoverImagePath());
+                    if (imgFile.exists() && !imgFile.isDirectory()) {
+                        BufferedImage img = ImageIO.read(imgFile);
+                        Image scaledImg = img.getScaledInstance(50, 55, Image.SCALE_SMOOTH);
                         coverIcon = new ImageIcon(scaledImg);
                     }
                 } catch (Exception ex) {
-                    System.err.println("Error loading image for book " + book.getTitle() + ": " + ex.getMessage());
+                    System.err.println("Error loading cover image for table, book " + book.getTitle() + ": " + ex.getMessage());
                 }
-
-                // Panel untuk tombol action
-                JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-                JButton previewButton = new JButton("Preview");
-                JButton borrowButton = new JButton("Pinjam");
-                JButton readButton = new JButton("Baca");
-
-                previewButton.setFont(new Font("Arial", Font.PLAIN, 10));
-                borrowButton.setFont(new Font("Arial", Font.PLAIN, 10));
-                readButton.setFont(new Font("Arial", Font.PLAIN, 10));
-
-                actionPanel.add(previewButton);
-                actionPanel.add(borrowButton);
-                actionPanel.add(readButton);
-
-                model.addRow(new Object[]{
-                    book.getIdBook(),
-                    book.getTitle(),
-                    book.getAuthor(),
-                    coverIcon,
-                    book.getRating(),
-                    actionPanel
-                });
-            }
-        });
-
-        // Muat semua buku saat dashboard dibuka
-        List<Book> initialBooks = bookDAO.getAllBooks();
-        for (Book book : initialBooks) {
-            ImageIcon coverIcon = null;
-            try {
-                if (book.getCoverImagePath() != null && !book.getCoverImagePath().isEmpty()) {
-                    BufferedImage img = ImageIO.read(new File(book.getCoverImagePath()));
-                    Image scaledImg = img.getScaledInstance(40, 40, Image.SCALE_SMOOTH);
-                    coverIcon = new ImageIcon(scaledImg);
-                }
-            } catch (Exception ex) {
-                System.err.println("Error loading image for book " + book.getTitle() + ": " + ex.getMessage());
             }
 
-            // Panel untuk tombol action
-            JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-            JButton previewButton = new JButton("Preview");
-            JButton borrowButton = new JButton("Pinjam");
-            JButton readButton = new JButton("Baca");
+            JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 3, 0));
+            actionPanel.setOpaque(false);
+            
+            JButton previewBtn = new JButton("Lihat");
+            JButton borrowBtn = new JButton("Pinjam");
+            JButton favoriteBtnTable = new JButton(); 
 
-            previewButton.setFont(new Font("Arial", Font.PLAIN, 10));
-            borrowButton.setFont(new Font("Arial", Font.PLAIN, 10));
-            readButton.setFont(new Font("Arial", Font.PLAIN, 10));
+            Font actionButtonFont = new Font("Arial", Font.PLAIN, 10);
+            previewBtn.setFont(actionButtonFont);
+            borrowBtn.setFont(actionButtonFont);
+            favoriteBtnTable.setFont(actionButtonFont); 
 
-            actionPanel.add(previewButton);
-            actionPanel.add(borrowButton);
-            actionPanel.add(readButton);
+            // Gunakan this.favoriteDAO yang sudah diinisialisasi di konstruktor Dashboard
+            updateFavoriteButtonForTable(favoriteBtnTable, this.favoriteDAO.isFavorite(this.user.getIdUser(), book.getIdBook()));
+
+
+            previewBtn.addActionListener(ae -> {
+                System.out.println("Preview action for book ID: " + book.getIdBook());
+                // --- PEMANGGILAN KONSTRUKTOR DIPERBARUI ---
+                new BookDetailScreen(book.getIdBook(), bookDAO, this.user, this.favoriteDAO).setVisible(true);
+            });
+            borrowBtn.addActionListener(ae -> {
+                System.out.println("Borrow action for book ID: " + book.getIdBook());
+                LoanDAO tempLoanDAO = new LoanDAO(DBConnection.getConnection());
+                boolean success = tempLoanDAO.addLoan(this.user.getIdUser(), book.getIdBook());
+                 if (success) {
+                    JOptionPane.showMessageDialog(this, "Pengajuan pinjaman untuk buku \"" + book.getTitle() + "\" berhasil.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Gagal mengajukan peminjaman untuk buku \"" + book.getTitle() + "\".", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            favoriteBtnTable.addActionListener(ae -> {
+                boolean isCurrentlyFavorite = this.favoriteDAO.isFavorite(this.user.getIdUser(), book.getIdBook());
+                boolean success;
+                if (isCurrentlyFavorite) {
+                    success = this.favoriteDAO.removeFavorite(this.user.getIdUser(), book.getIdBook());
+                    if (success) JOptionPane.showMessageDialog(this, "\""+book.getTitle()+"\" dihapus dari favorit.");
+                } else {
+                    success = this.favoriteDAO.addFavorite(this.user.getIdUser(), book.getIdBook());
+                     if (success) JOptionPane.showMessageDialog(this, "\""+book.getTitle()+"\" ditambahkan ke favorit.");
+                }
+                if(success) {
+                    updateFavoriteButtonForTable(favoriteBtnTable, !isCurrentlyFavorite);
+                } else {
+                     JOptionPane.showMessageDialog(this, "Aksi favorit gagal.");
+                }
+            });
+
+            actionPanel.add(favoriteBtnTable); 
+            actionPanel.add(previewBtn);
+            actionPanel.add(borrowBtn);
 
             model.addRow(new Object[]{
                 book.getIdBook(),
@@ -360,23 +325,40 @@ public class Dashboard extends JFrame {
                 actionPanel
             });
         }
-
-        add(mainPanel);
-        setVisible(true);
     }
-
-    // Helper method untuk ambil Book berdasarkan id
-    private Book getBookById(int idBook) {
-        List<Book> books = bookDAO.getAllBooks();
-        for (Book book : books) {
-            if (book.getIdBook() == idBook) {
-                return book;
-            }
+    
+    private void updateFavoriteButtonForTable(JButton favButton, boolean isFavorite) {
+        if (isFavorite) {
+            favButton.setText("❤️ Fav"); 
+            favButton.setBackground(new Color(220, 53, 69)); 
+        } else {
+            favButton.setText("🤍 Add Fav");
+            favButton.setBackground(new Color(108, 117, 125)); 
         }
-        return null;
+        favButton.setForeground(Color.WHITE);
+        favButton.setFocusPainted(false);
+        // favButton.setMargin(new Insets(2,5,2,5)); 
     }
 
-    // Getter untuk user
+    private void refreshDashboardData() {
+        System.out.println("Refreshing dashboard data...");
+        User latestUser = userDAO.getUserById(this.user.getIdUser());
+        if (latestUser != null) {
+            this.user = latestUser;
+            welcomeLabel.setText("Selamat Datang, " + user.getNama() + "!");
+        } else {
+            System.err.println("Gagal refresh user data, user tidak ditemukan.");
+        }
+        loadInitialBooks(); 
+        searchField.setText("");
+        System.out.println("Dashboard data refreshed.");
+    }
+
+    // Hapus atau komentari method getBookById(int idBook) dari Dashboard jika tidak digunakan lagi
+    // private Book getBookById(int idBook) {
+    //     return bookDAO.getBookById(idBook);
+    // }
+
     public User getUser() {
         return user;
     }
