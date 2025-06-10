@@ -3,6 +3,8 @@ import java.awt.*;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 
+
+
 public class Register extends JFrame {
     private JTextField nameField, emailField, nimField; // Tambah field NIM
     private JPasswordField passwordField;
@@ -77,15 +79,17 @@ public class Register extends JFrame {
                 return;
             }
 
+            
             User user = new User(
-                newId,              // idUser
-                name,               // nama
-                nim,                // nim (diisi dari input)
-                email,              // email
-                "",                 // nomorTelepon (default kosong, bisa ditambah field)
-                password,           // password
-                3,                  // idRole (default user)
-                false               // isVerified
+                newId,                
+                name,                 
+                nim,                
+                email,                
+                "",                   
+                password,             
+                3,                   
+                false,               
+                true                  
             );
 
             boolean success = userDAO.register(user);

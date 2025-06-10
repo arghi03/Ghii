@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
 import java.awt.Desktop;
-// import java.awt.event.ActionEvent; // Tidak terpakai secara eksplisit
+
 
 public class Dashboard extends JFrame {
     private UserDAO userDAO;
@@ -18,7 +18,7 @@ public class Dashboard extends JFrame {
     private JTextField searchField;
     private JTable bookTable;
     private BookDAO bookDAO;
-    private FavoriteDAO favoriteDAO; // Pastikan ini sudah diinisialisasi
+    private FavoriteDAO favoriteDAO; 
 
     public Dashboard(String nama, String email, int idRole) {
         Connection conn = null;
@@ -29,7 +29,7 @@ public class Dashboard extends JFrame {
             }
             userDAO = new UserDAO(conn);
             bookDAO = new BookDAO(conn);
-            favoriteDAO = new FavoriteDAO(conn); // Inisialisasi FavoriteDAO di sini
+            favoriteDAO = new FavoriteDAO(conn); 
 
             this.user = userDAO.getUserByNameAndEmail(nama, email);
 
@@ -145,8 +145,8 @@ public class Dashboard extends JFrame {
         roleSpecificButtonPanel.setOpaque(false);
 
         if (user.getIdRole() == 1) { // Admin
-            JButton verifyUsersButton = createStyledButton("Verifikasi User");
-            verifyUsersButton.addActionListener(e -> new VerificationListScreen(user));
+            JButton verifyUsersButton = createStyledButton("Manajemen User");
+            verifyUsersButton.addActionListener(e -> new UserManagementScreen(user));
             JButton viewReportsButton = createStyledButton("Lihat Laporan");
             viewReportsButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Fitur laporan belum tersedia!", "Info", JOptionPane.INFORMATION_MESSAGE));
             roleSpecificButtonPanel.add(verifyUsersButton);
@@ -158,7 +158,7 @@ public class Dashboard extends JFrame {
             manageLoansButton.addActionListener(e -> new LoanManagementScreen(user));
             roleSpecificButtonPanel.add(addBookButton);
             roleSpecificButtonPanel.add(manageLoansButton);
-        } else { // User (idRole == 3 atau lainnya)
+        } else { // User
             JButton browseBooksButton = createStyledButton("Lihat Daftar Buku");
             browseBooksButton.addActionListener(e -> new BookListScreen(user));
             roleSpecificButtonPanel.add(browseBooksButton);
@@ -247,7 +247,7 @@ public class Dashboard extends JFrame {
 
     private void populateBookTable(List<Book> books) {
         DefaultTableModel model = (DefaultTableModel) bookTable.getModel();
-        // FavoriteDAO sudah menjadi field instance, jadi bisa langsung dipakai
+        
 
         for (Book book : books) {
             ImageIcon coverIcon = null;
@@ -276,13 +276,12 @@ public class Dashboard extends JFrame {
             borrowBtn.setFont(actionButtonFont);
             favoriteBtnTable.setFont(actionButtonFont); 
 
-            // Gunakan this.favoriteDAO yang sudah diinisialisasi di konstruktor Dashboard
             updateFavoriteButtonForTable(favoriteBtnTable, this.favoriteDAO.isFavorite(this.user.getIdUser(), book.getIdBook()));
 
 
             previewBtn.addActionListener(ae -> {
                 System.out.println("Preview action for book ID: " + book.getIdBook());
-                // --- PEMANGGILAN KONSTRUKTOR DIPERBARUI ---
+               
                 new BookDetailScreen(book.getIdBook(), bookDAO, this.user, this.favoriteDAO).setVisible(true);
             });
             borrowBtn.addActionListener(ae -> {
@@ -354,10 +353,7 @@ public class Dashboard extends JFrame {
         System.out.println("Dashboard data refreshed.");
     }
 
-    // Hapus atau komentari method getBookById(int idBook) dari Dashboard jika tidak digunakan lagi
-    // private Book getBookById(int idBook) {
-    //     return bookDAO.getBookById(idBook);
-    // }
+
 
     public User getUser() {
         return user;

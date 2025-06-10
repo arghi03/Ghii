@@ -42,7 +42,7 @@ public class FavoriteDAO {
             }
         } catch (SQLException e) {
     
-            if (e.getErrorCode() == 1062) { // Error code for duplicate entry in MySQL
+            if (e.getErrorCode() == 1062) { 
                  System.out.println("Gagal menambahkan favorit: Buku (ID: " + bookId + ") sudah ada di favorit user (ID: " + userId + ") - dicegat oleh DB.");
             } else {
                 System.err.println("Error adding favorite: " + e.getMessage());
@@ -68,7 +68,7 @@ public class FavoriteDAO {
                 return true;
             } else {
                  System.out.println("Tidak ada buku (ID: " + bookId + ") di favorit user (ID: " + userId + ") untuk dihapus.");
-                return false; // Tidak ada baris yang terhapus (mungkin memang tidak ada)
+                return false; 
             }
         } catch (SQLException e) {
             System.err.println("Error removing favorite: " + e.getMessage());

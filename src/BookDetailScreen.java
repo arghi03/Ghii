@@ -1,12 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
-// Pastikan User, Book, BookDAO, FavoriteDAO, DBConnection diimport jika berada di package berbeda
-// import com.perpustakaan.model.User;
-// import com.perpustakaan.model.Book;
-// import com.perpustakaan.dao.BookDAO;
-// import com.perpustakaan.dao.FavoriteDAO; // Tambahkan ini
-// import com.perpustakaan.util.DBConnection;
 
 public class BookDetailScreen extends JFrame {
     private BookDAO bookDAO;
@@ -14,7 +8,7 @@ public class BookDetailScreen extends JFrame {
     private User currentUser;        // User yang sedang login
     private Book currentBook;        // Buku yang sedang ditampilkan detailnya
 
-    // Palet Warna (bisa disamakan dengan layar lain)
+    
     private Color primaryColor = new Color(30, 58, 138);
     private Color secondaryColor = new Color(59, 130, 246); // Digunakan untuk tombol kembali dan favorit (belum difavoritkan)
     private Color favoriteActiveColor = new Color(220, 53, 69); // Merah untuk favorit aktif
@@ -22,7 +16,7 @@ public class BookDetailScreen extends JFrame {
     private Color labelColor = new Color(100, 100, 100);
     private Color textColor = new Color(33, 33, 33);
 
-    private JButton favoriteButton; // Deklarasikan sebagai field agar bisa diupdate
+    private JButton favoriteButton; 
 
     public BookDetailScreen(int idBook, BookDAO bookDAO, User currentUser, FavoriteDAO favoriteDAO) {
         this.bookDAO = bookDAO;
@@ -45,7 +39,7 @@ public class BookDetailScreen extends JFrame {
         initComponents(); 
 
         if (currentBook != null) {
-            updateFavoriteButtonState(); // Panggil setelah favoriteButton diinisialisasi
+            updateFavoriteButtonState(); 
         }
         
         setVisible(true);
@@ -93,15 +87,14 @@ public class BookDetailScreen extends JFrame {
             mainPanel.add(createDetailEntry("PENULIS", currentBook.getAuthor(), detailHeaderFont, detailValueFont));
             mainPanel.add(Box.createVerticalStrut(10));
             mainPanel.add(createDetailEntry("RATING", String.format("%.1f / 5.0", currentBook.getRating()), detailHeaderFont, detailValueFont));
-            mainPanel.add(Box.createVerticalStrut(20)); // Beri jarak sebelum tombol
+            mainPanel.add(Box.createVerticalStrut(20)); 
 
             mainPanel.add(Box.createVerticalGlue()); 
             
             JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 5));
             actionPanel.setBackground(backgroundColor); 
 
-            favoriteButton = new JButton(); // Inisialisasi field instance
-            // Style awal akan di-set oleh updateFavoriteButtonState() nanti
+            favoriteButton = new JButton(); 
             favoriteButton.addActionListener(e -> toggleFavoriteStatus());
             actionPanel.add(favoriteButton);
             

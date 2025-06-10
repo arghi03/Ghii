@@ -20,70 +20,55 @@ public class UserDAO {
             System.err.println("Koneksi database null! Tidak bisa register.");
             return false;
         }
-
-        // Asumsi tabel users punya kolom: id_user, nama, nim, email, nomor_telepon, password, is_verified, (mungkin otp_code, otp_expiry)
-        // Asumsi tabel profile punya kolom: id_profile (PK), id_user (FK), id_role
+        // Saat register, is_active di-set ke TRUE secara default oleh database
         String sqlUser = "INSERT INTO users (id_user, nama, nim, email, nomor_telepon, password, is_verified) VALUES (?, ?, ?, ?, ?, ?, ?)";
-        // Jika id_role disimpan di tabel users, tidak perlu insert ke profile untuk role saja.
-        // Jika id_role disimpan di tabel profile, maka perlu ProfileDAO.
-        // Untuk contoh ini, kita asumsikan id_role ada di tabel profile.
-        ProfileDAO profileDAO = new ProfileDAO(conn); // Pastikan ProfileDAO ada dan berfungsi
+        ProfileDAO profileDAO = new ProfileDAO(conn);
 
         try {
-            conn.setAutoCommit(false); // Mulai transaksi
+            conn.setAutoCommit(false); 
+            System.out.println("Mendaftarkan user: " + user.getEmail());
 
-            // Insert ke tabel users
             try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
-                stmtUser.setInt(1, user.getIdUser()); // Asumsi id_user sudah di-set sebelumnya (misal dari getNewUserId)
+                stmtUser.setInt(1, user.getIdUser());
                 stmtUser.setString(2, user.getNama());
                 stmtUser.setString(3, user.getNim());
                 stmtUser.setString(4, user.getEmail());
                 stmtUser.setString(5, user.getNomorTelepon());
-                stmtUser.setString(6, user.getPassword()); // Sebaiknya password di-hash sebelum disimpan
-                stmtUser.setBoolean(7, false); // User baru defaultnya belum terverifikasi
+                stmtUser.setString(6, user.getPassword());
+                stmtUser.setBoolean(7, false); // is_verified
                 stmtUser.executeUpdate();
             }
 
-            // Insert ke tabel profile
-            // Buat objek Profile berdasarkan data User
-            Profile profile = new Profile(); // Asumsi ada kelas Profile
+            // Asumsi ProfileDAO dan Profile class ada
+            Profile profile = new Profile(); 
             profile.setIdUser(user.getIdUser());
-            profile.setNama(user.getNama()); // Atau field lain yang relevan untuk profile
+            profile.setNama(user.getNama());
             profile.setNim(user.getNim());
             profile.setEmail(user.getEmail());
             profile.setNomorTelepon(user.getNomorTelepon());
-            profile.setIdRole(user.getIdRole()); // Ambil id_role dari objek User
-
-            boolean profileSuccess = profileDAO.insertProfile(profile); // Asumsi ada method ini di ProfileDAO
+            profile.setIdRole(user.getIdRole()); 
+            boolean profileSuccess = profileDAO.insertProfile(profile); 
             if (!profileSuccess) {
-                throw new SQLException("Gagal insert ke tabel profile.");
+                throw new SQLException("Gagal insert ke tabel profile");
             }
 
-            conn.commit(); // Commit transaksi jika semua berhasil
+            conn.commit();
             System.out.println("Registrasi berhasil untuk: " + user.getEmail());
             return true;
-
         } catch (SQLException e) {
-            System.err.println("Registrasi gagal: " + e.getMessage());
+            System.err.println("Registration failed: " + e.getMessage());
             e.printStackTrace();
             try {
-                if (conn != null) {
-                    conn.rollback(); // Rollback jika terjadi error
-                    System.out.println("Transaksi registrasi di-rollback untuk: " + user.getEmail());
-                }
+                if (conn != null) conn.rollback();
             } catch (SQLException rollbackEx) {
-                System.err.println("Rollback gagal: " + rollbackEx.getMessage());
-                rollbackEx.printStackTrace();
+                System.err.println("Rollback failed: " + rollbackEx.getMessage());
             }
             return false;
         } finally {
             try {
-                if (conn != null) {
-                    conn.setAutoCommit(true); // Kembalikan ke mode auto-commit
-                }
+                if (conn != null) conn.setAutoCommit(true);
             } catch (SQLException e) {
-                System.err.println("Gagal mereset auto-commit: " + e.getMessage());
-                e.printStackTrace();
+                System.err.println("Failed to reset auto-commit: " + e.getMessage());
             }
         }
     }
@@ -93,35 +78,20 @@ public class UserDAO {
             System.err.println("Koneksi database null! Tidak bisa login.");
             return null;
         }
-        // Ambil id_role dari tabel profile
-        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, p.id_role, u.otp_code, u.otp_expiry " +
+        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, u.is_active, p.id_role, u.otp_code, u.otp_expiry " +
                      "FROM users u " +
                      "JOIN profile p ON u.id_user = p.id_user " +
-                     "WHERE u.nama = ? AND u.password = ?"; // Password sebaiknya diverifikasi dengan hash
+                     "WHERE u.nama = ? AND u.password = ? AND u.is_active = true"; // HANYA USER AKTIF YANG BISA LOGIN
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, nama);
             stmt.setString(2, password);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
-                User user = new User(
-                    rs.getInt("id_user"),
-                    rs.getString("nama"),
-                    rs.getString("nim"),
-                    rs.getString("email"),
-                    rs.getString("nomor_telepon"),
-                    rs.getString("password"), // Sebaiknya tidak menyimpan password plain text di objek User setelah login
-                    rs.getInt("id_role"),
-                    rs.getBoolean("is_verified")
-                );
-                user.setOtpCode(rs.getString("otp_code"));
-                String otpExpiryStr = rs.getString("otp_expiry");
-                if (otpExpiryStr != null) {
-                    user.setOtpExpiry(parseDateTime(otpExpiryStr));
-                }
-                System.out.println("Login berhasil untuk: " + nama + ", isVerified: " + user.isVerified());
+                User user = createUserFromResultSet(rs);
+                System.out.println("Login berhasil untuk: " + nama + ", isVerified: " + user.isVerified() + ", isActive: " + user.isActive());
                 return user;
             } else {
-                System.out.println("User tidak ditemukan atau password salah untuk nama: " + nama);
+                System.out.println("Login gagal: User tidak ditemukan, password salah, atau akun tidak aktif.");
                 return null;
             }
         } catch (SQLException e) {
@@ -131,158 +101,37 @@ public class UserDAO {
         }
     }
 
-    public User getUserByNameAndEmail(String nama, String email) {
-        if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa getUserByNameAndEmail.");
-            return null;
-        }
-        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, p.id_role, u.otp_code, u.otp_expiry " +
-                     "FROM users u " +
-                     "JOIN profile p ON u.id_user = p.id_user " +
-                     "WHERE u.nama = ? AND u.email = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, nama);
-            stmt.setString(2, email);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                 User user = new User(
-                    rs.getInt("id_user"),
-                    rs.getString("nama"),
-                    rs.getString("nim"),
-                    rs.getString("email"),
-                    rs.getString("nomor_telepon"),
-                    rs.getString("password"),
-                    rs.getInt("id_role"),
-                    rs.getBoolean("is_verified")
-                );
-                user.setOtpCode(rs.getString("otp_code"));
-                String otpExpiryStr = rs.getString("otp_expiry");
-                if (otpExpiryStr != null) {
-                    user.setOtpExpiry(parseDateTime(otpExpiryStr));
-                }
-                return user;
-            } else {
-                System.out.println("User tidak ditemukan untuk nama: " + nama + " dan email: " + email);
-                return null;
-            }
-        } catch (SQLException e) {
-            System.err.println("Error mengambil user berdasarkan nama dan email: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-    public User getUserByName(String nama) {
-        if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa getUserByName.");
-            return null;
-        }
-        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, p.id_role, u.otp_code, u.otp_expiry " +
-                     "FROM users u " +
-                     "JOIN profile p ON u.id_user = p.id_user " +
-                     "WHERE u.nama = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, nama);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                 User user = new User(
-                    rs.getInt("id_user"),
-                    rs.getString("nama"),
-                    rs.getString("nim"),
-                    rs.getString("email"),
-                    rs.getString("nomor_telepon"),
-                    rs.getString("password"),
-                    rs.getInt("id_role"),
-                    rs.getBoolean("is_verified")
-                );
-                user.setOtpCode(rs.getString("otp_code"));
-                String otpExpiryStr = rs.getString("otp_expiry");
-                if (otpExpiryStr != null) {
-                    user.setOtpExpiry(parseDateTime(otpExpiryStr));
-                }
-                return user;
-            } else {
-                System.out.println("User tidak ditemukan untuk nama: " + nama);
-                return null;
-            }
-        } catch (SQLException e) {
-            System.err.println("Error mengambil user berdasarkan nama: " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-    
-    // METHOD BARU YANG DITAMBAHKAN
-    public User getUserById(int idUser) {
-        if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa getUserById.");
-            return null;
-        }
-        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, p.id_role, u.otp_code, u.otp_expiry " +
-                     "FROM users u " +
-                     "LEFT JOIN profile p ON u.id_user = p.id_user " + // LEFT JOIN untuk kasus user belum ada di profile
-                     "WHERE u.id_user = ?";
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, idUser);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                User user = new User(
-                    rs.getInt("id_user"),
-                    rs.getString("nama"),
-                    rs.getString("nim"),
-                    rs.getString("email"),
-                    rs.getString("nomor_telepon"),
-                    rs.getString("password"), // Sebaiknya tidak mengambil password untuk info umum
-                    rs.getInt("id_role"),     // Diambil dari profile table
-                    rs.getBoolean("is_verified")
-                );
-                user.setOtpCode(rs.getString("otp_code"));
-                String otpExpiryStr = rs.getString("otp_expiry");
-                if (otpExpiryStr != null) {
-                    user.setOtpExpiry(parseDateTime(otpExpiryStr));
-                }
-                return user;
-            } else {
-                System.out.println("User dengan ID " + idUser + " tidak ditemukan.");
-                return null;
-            }
-        } catch (SQLException e) {
-            System.err.println("Error mengambil user berdasarkan ID " + idUser + ": " + e.getMessage());
-            e.printStackTrace();
-            return null;
-        }
-    }
-
-
     public boolean updateUser(User user) {
         if (conn == null) {
             System.err.println("Koneksi database null! Tidak bisa updateUser.");
             return false;
         }
-        // Update tabel users
-        String sqlUser = "UPDATE users SET nama = ?, nim = ?, email = ?, nomor_telepon = ?, is_verified = ?, otp_code = ?, otp_expiry = ? WHERE id_user = ?";
-        // Update juga tabel profile jika ada perubahan role atau data lain di profile
-        String sqlProfile = "UPDATE profile SET id_role = ? WHERE id_user = ?"; // Contoh jika hanya role yang diupdate di profile
+        // Transaksi untuk update tabel users dan profile
+        String sqlUser = "UPDATE users SET nama = ?, nim = ?, email = ?, nomor_telepon = ?, is_verified = ?, is_active = ?, otp_code = ?, otp_expiry = ? WHERE id_user = ?";
+        String sqlProfile = "UPDATE profile SET id_role = ? WHERE id_user = ?";
 
         try {
             conn.setAutoCommit(false);
-
+            
+            // Update tabel users
             try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
                 stmtUser.setString(1, user.getNama());
                 stmtUser.setString(2, user.getNim());
                 stmtUser.setString(3, user.getEmail());
                 stmtUser.setString(4, user.getNomorTelepon());
                 stmtUser.setBoolean(5, user.isVerified());
-                stmtUser.setString(6, user.getOtpCode());
+                stmtUser.setBoolean(6, user.isActive()); // Set status aktif
+                stmtUser.setString(7, user.getOtpCode());
                 if (user.getOtpExpiry() != null) {
-                    stmtUser.setString(7, user.getOtpExpiry().format(DB_DATETIME_FORMATTER));
+                    stmtUser.setString(8, user.getOtpExpiry().format(DB_DATETIME_FORMATTER));
                 } else {
-                    stmtUser.setNull(7, Types.TIMESTAMP);
+                    stmtUser.setNull(8, Types.TIMESTAMP);
                 }
-                stmtUser.setInt(8, user.getIdUser());
-                stmtUser.executeUpdate(); // Tidak perlu cek affectedRows di sini jika mau lanjut ke profile
+                stmtUser.setInt(9, user.getIdUser());
+                stmtUser.executeUpdate();
             }
 
+            // Update tabel profile (khusus untuk role)
             try (PreparedStatement stmtProfile = conn.prepareStatement(sqlProfile)) {
                 stmtProfile.setInt(1, user.getIdRole());
                 stmtProfile.setInt(2, user.getIdUser());
@@ -290,13 +139,12 @@ public class UserDAO {
             }
             
             conn.commit();
-            System.out.println("Update user dan profile berhasil untuk: " + user.getEmail());
+            System.out.println("Update user dan profile berhasil untuk ID: " + user.getIdUser());
             return true;
-
         } catch (SQLException e) {
             System.err.println("Error updating user: " + e.getMessage());
             e.printStackTrace();
-             try {
+            try {
                 if (conn != null) conn.rollback();
             } catch (SQLException ex) {
                 ex.printStackTrace();
@@ -310,11 +158,128 @@ public class UserDAO {
             }
         }
     }
+    
+    public List<User> getAllUsers() {
+        List<User> users = new ArrayList<>();
+        if (conn == null) {
+            System.err.println("Koneksi null di getAllUsers.");
+            return users;
+        }
+        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, u.is_active, p.id_role, u.otp_code, u.otp_expiry " +
+                     "FROM users u " +
+                     "LEFT JOIN profile p ON u.id_user = p.id_user " +
+                     "ORDER BY u.id_user";
+        try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                users.add(createUserFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching all users: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return users;
+    }
+    
+    public User getUserById(int idUser) {
+        if (conn == null) {
+            System.err.println("Koneksi database null! Tidak bisa getUserById.");
+            return null;
+        }
+        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, u.is_active, p.id_role, u.otp_code, u.otp_expiry " +
+                     "FROM users u LEFT JOIN profile p ON u.id_user = p.id_user WHERE u.id_user = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idUser);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return createUserFromResultSet(rs);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error retrieving user by ID: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
 
-    // Method updateRole yang lama mungkin tidak diperlukan jika updateRole sudah dihandle di updateUser
-    // public boolean updateRole(int idUser, int newRoleId) { ... }
+    public User getUserByNameAndEmail(String nama, String email) {
+        if (conn == null) return null;
+        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, u.is_active, p.id_role, u.otp_code, u.otp_expiry " +
+                     "FROM users u JOIN profile p ON u.id_user = p.id_user WHERE u.nama = ? AND u.email = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, nama);
+            stmt.setString(2, email);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) return createUserFromResultSet(rs);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+    
+    public List<User> getUnverifiedUsers() {
+        List<User> users = new ArrayList<>();
+        if (conn == null) return users;
+        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, u.is_active, p.id_role " +
+                     "FROM users u JOIN profile p ON u.id_user = p.id_user WHERE u.is_verified = false ORDER BY u.id_user";
+        try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                users.add(createUserFromResultSet(rs));
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching unverified users: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return users;
+    }
 
+    public boolean approveUser(int idUser) {
+        User user = getUserById(idUser);
+        if (user != null) {
+            user.setVerified(true);
+            return updateUser(user); // Gunakan updateUser untuk konsistensi
+        }
+        return false;
+    }
 
+    public boolean rejectUser(int idUser) {
+        // ... (kode rejectUser yang sudah ada sebelumnya) ...
+        try {
+            conn.setAutoCommit(false);
+            String sqlLoans = "DELETE FROM loans WHERE id_user = ?"; // Hapus juga dari loans
+             try (PreparedStatement stmtLoans = conn.prepareStatement(sqlLoans)) {
+                stmtLoans.setInt(1, idUser);
+                stmtLoans.executeUpdate();
+            }
+            String sqlFavorites = "DELETE FROM favorites WHERE id_user = ?"; // Hapus juga dari favorites
+             try (PreparedStatement stmtFavorites = conn.prepareStatement(sqlFavorites)) {
+                stmtFavorites.setInt(1, idUser);
+                stmtFavorites.executeUpdate();
+            }
+            String sqlProfile = "DELETE FROM profile WHERE id_user = ?";
+            try (PreparedStatement stmtProfile = conn.prepareStatement(sqlProfile)) {
+                stmtProfile.setInt(1, idUser);
+                stmtProfile.executeUpdate();
+            }
+            String sqlUser = "DELETE FROM users WHERE id_user = ?";
+            try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
+                stmtUser.setInt(1, idUser);
+                int affectedRows = stmtUser.executeUpdate();
+                if (affectedRows > 0) {
+                    conn.commit();
+                    return true;
+                }
+            }
+            conn.rollback();
+            return false;
+        } catch (SQLException e) {
+            System.err.println("Error rejecting user: " + e.getMessage());
+            try { if(conn != null) conn.rollback(); } catch (SQLException ex) { ex.printStackTrace(); }
+            return false;
+        } finally {
+            try { if(conn != null) conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
+        }
+    }
+
+    // --- METHOD YANG DITAMBAHKAN KEMBALI ---
     public int getNewUserId() {
         if (conn == null) {
             System.err.println("Koneksi database null! Tidak bisa getNewUserId.");
@@ -325,9 +290,9 @@ public class UserDAO {
              ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) {
                 int newId = rs.getInt("new_id");
-                return (newId <= 0) ? 1 : newId; // Jika tabel kosong atau MAX(id_user) null, new_id bisa 0 atau 1.
+                return (newId <= 0) ? 1 : newId; // Jika tabel kosong, newId jadi 1
             } else {
-                return 1; // Tabel kosong
+                return 1; // Jika tabel benar-benar kosong
             }
         } catch (SQLException e) {
             System.err.println("Error generating new user ID: " + e.getMessage());
@@ -351,114 +316,43 @@ public class UserDAO {
             System.out.println("OTP berhasil disimpan untuk user: " + user.getEmail());
         }
     }
+    // --- AKHIR METHOD YANG DITAMBAHKAN KEMBALI ---
 
-    public List<User> getUnverifiedUsers() {
-        List<User> users = new ArrayList<>();
-        String sql = "SELECT u.id_user, u.nama, u.nim, u.email, u.nomor_telepon, u.password, u.is_verified, p.id_role " +
-                     "FROM users u " +
-                     "JOIN profile p ON u.id_user = p.id_user " +
-                     "WHERE u.is_verified = false ORDER BY u.id_user"; // Tambah urutan
-        try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-            while (rs.next()) {
-                users.add(new User(
-                    rs.getInt("id_user"),
-                    rs.getString("nama"),
-                    rs.getString("nim"),
-                    rs.getString("email"),
-                    rs.getString("nomor_telepon"),
-                    rs.getString("password"),
-                    rs.getInt("id_role"),
-                    rs.getBoolean("is_verified")
-                ));
-            }
-        } catch (SQLException e) {
-            System.err.println("Error fetching unverified users: " + e.getMessage());
-            e.printStackTrace();
+    // Helper method untuk membuat objek User dari ResultSet agar tidak duplikat kode
+    private User createUserFromResultSet(ResultSet rs) throws SQLException {
+        User user = new User(
+            rs.getInt("id_user"),
+            rs.getString("nama"),
+            rs.getString("nim"),
+            rs.getString("email"),
+            rs.getString("nomor_telepon"),
+            rs.getString("password"),
+            rs.getInt("id_role"),
+            rs.getBoolean("is_verified"),
+            rs.getBoolean("is_active")
+        );
+        // Cek jika kolom OTP ada sebelum mengambilnya
+        if(hasColumn(rs, "otp_code")) {
+             user.setOtpCode(rs.getString("otp_code"));
         }
-        return users;
+        if(hasColumn(rs, "otp_expiry")) {
+            String otpExpiryStr = rs.getString("otp_expiry");
+            if (otpExpiryStr != null && !otpExpiryStr.trim().isEmpty()) {
+                user.setOtpExpiry(LocalDateTime.parse(otpExpiryStr, DB_DATETIME_FORMATTER));
+            }
+        }
+        return user;
     }
 
-    public boolean approveUser(int idUser) {
-        // Sebaiknya ini jadi bagian dari updateUser jika hanya mengubah is_verified
-        User userToApprove = getUserById(idUser);
-        if (userToApprove != null) {
-            userToApprove.setVerified(true);
-            return updateUser(userToApprove);
+    // Helper untuk cek apakah kolom ada di ResultSet
+    private boolean hasColumn(ResultSet rs, String columnName) throws SQLException {
+        ResultSetMetaData rsmd = rs.getMetaData();
+        int columns = rsmd.getColumnCount();
+        for (int x = 1; x <= columns; x++) {
+            if (columnName.equals(rsmd.getColumnName(x))) {
+                return true;
+            }
         }
-        System.err.println("Gagal approve: User dengan ID " + idUser + " tidak ditemukan.");
         return false;
-    }
-
-    public boolean rejectUser(int idUser) {
-        // Menghapus user melibatkan penghapusan dari beberapa tabel terkait (loans, profile, users)
-        // Perlu hati-hati dengan foreign key constraints
-        // Urutan penghapusan: loans (yang terkait user ini), profile, baru users.
-        String sqlDeleteLoans = "DELETE FROM loans WHERE id_user = ?";
-        String sqlDeleteProfile = "DELETE FROM profile WHERE id_user = ?";
-        String sqlDeleteUser = "DELETE FROM users WHERE id_user = ?";
-
-        try {
-            conn.setAutoCommit(false);
-
-            // Hapus dari loans
-            try (PreparedStatement stmtLoans = conn.prepareStatement(sqlDeleteLoans)) {
-                stmtLoans.setInt(1, idUser);
-                stmtLoans.executeUpdate(); 
-                // Tidak masalah jika tidak ada loans, proses lanjut
-            }
-            
-            // Hapus dari profile
-            try (PreparedStatement stmtProfile = conn.prepareStatement(sqlDeleteProfile)) {
-                stmtProfile.setInt(1, idUser);
-                stmtProfile.executeUpdate();
-                // Tidak masalah jika tidak ada profile (meskipun seharusnya ada), proses lanjut
-            }
-
-            // Hapus dari users
-            try (PreparedStatement stmtUser = conn.prepareStatement(sqlDeleteUser)) {
-                stmtUser.setInt(1, idUser);
-                int affectedRows = stmtUser.executeUpdate();
-                if (affectedRows > 0) {
-                    conn.commit();
-                    System.out.println("User dengan ID " + idUser + " berhasil ditolak (dihapus).");
-                    return true;
-                } else {
-                    System.out.println("Gagal menghapus user dengan ID " + idUser + " dari tabel users (mungkin tidak ditemukan).");
-                    conn.rollback(); // Rollback jika user utama tidak terhapus
-                    return false;
-                }
-            }
-        } catch (SQLException e) {
-            System.err.println("Error rejecting (deleting) user ID " + idUser + ": " + e.getMessage());
-            e.printStackTrace();
-            try {
-                if (conn != null) conn.rollback();
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-            return false;
-        } finally {
-            try {
-                if (conn != null) conn.setAutoCommit(true);
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-        }
-    }
-    
-    // Helper method untuk parse string tanggal dari DB ke LocalDateTime
-    private LocalDateTime parseDateTime(String dateTimeStr) {
-        if (dateTimeStr == null || dateTimeStr.trim().isEmpty()) {
-            return null;
-        }
-        try {
-            if (dateTimeStr.endsWith(".0")) { // Handle jika ada .0 di akhir timestamp
-                 dateTimeStr = dateTimeStr.substring(0, dateTimeStr.length() - 2);
-            }
-            return LocalDateTime.parse(dateTimeStr, DB_DATETIME_FORMATTER);
-        } catch (Exception e) {
-            System.err.println("Failed to parse date-time string: " + dateTimeStr + " - " + e.getMessage());
-            return null;
-        }
     }
 }

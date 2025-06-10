@@ -4,13 +4,7 @@
     import java.awt.Desktop;
     import java.io.File;
     import java.io.IOException;
-    // Pastikan User, Book, BookDAO, LoanDAO, FavoriteDAO, DBConnection diimport jika berada di package berbeda
-    // import com.perpustakaan.model.User;
-    // import com.perpustakaan.model.Book;
-    // import com.perpustakaan.dao.BookDAO;
-    // import com.perpustakaan.dao.LoanDAO;
-    // import com.perpustakaan.dao.FavoriteDAO; // Tambahkan ini
-    // import com.perpustakaan.util.DBConnection;
+  
 
 
     public class BookListScreen extends JFrame {
@@ -24,10 +18,10 @@
             // Inisialisasi DAO
             this.bookDAO = new BookDAO(DBConnection.getConnection());
             this.loanDAO = new LoanDAO(DBConnection.getConnection());
-            this.favoriteDAO = new FavoriteDAO(DBConnection.getConnection()); // Inisialisasi FavoriteDAO
+            this.favoriteDAO = new FavoriteDAO(DBConnection.getConnection()); 
 
             setTitle("Daftar Buku Tersedia - " + currentUser.getNama());
-            setSize(800, 600); // Perbesar sedikit untuk tombol tambahan
+            setSize(800, 600);
             setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             setLocationRelativeTo(null);
 

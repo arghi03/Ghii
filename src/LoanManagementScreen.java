@@ -2,8 +2,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumnModel;
-import javax.swing.table.TableCellEditor; // IMPORT YANG PERLU DITAMBAHKAN
-import javax.swing.AbstractCellEditor;   // IMPORT YANG PERLU DITAMBAHKAN
+import javax.swing.table.TableCellEditor; 
+import javax.swing.AbstractCellEditor;   
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -12,11 +12,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-// Asumsi kelas User, Loan, LoanDAO, DBConnection sudah ada dan bisa diakses
-// import com.perpustakaan.model.User;
-// import com.perpustakaan.model.Loan;
-// import com.perpustakaan.dao.LoanDAO;
-// import com.perpustakaan.util.DBConnection;
 
 public class LoanManagementScreen extends JFrame {
     private LoanDAO loanDAO;
@@ -67,7 +62,7 @@ public class LoanManagementScreen extends JFrame {
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Kolom "Aksi" akan berisi tombol, jadi perlu bisa "diedit" untuk memicu aksi tombol
+           
                 return column == 4; 
             }
         };
@@ -77,7 +72,7 @@ public class LoanManagementScreen extends JFrame {
         pendingLoansTable.getTableHeader().setBackground(headerColor);
         pendingLoansTable.getTableHeader().setOpaque(false);
         pendingLoansTable.setFont(new Font("Arial", Font.PLAIN, 12));
-        pendingLoansTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); // Pilih satu baris saja
+        pendingLoansTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); 
 
         // Atur lebar kolom
         TableColumnModel columnModel = pendingLoansTable.getColumnModel();
@@ -106,7 +101,7 @@ public class LoanManagementScreen extends JFrame {
         
         JButton backButton = new JButton("Kembali ke Dashboard");
         styleActionButton(backButton, neutralColor, 180, 35);
-        backButton.addActionListener(e -> dispose()); // Hanya tutup window ini
+        backButton.addActionListener(e -> dispose()); 
 
         JPanel leftBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         leftBottomPanel.setOpaque(false);
@@ -125,11 +120,11 @@ public class LoanManagementScreen extends JFrame {
     }
 
     private void loadPendingLoans() {
-        tableModel.setRowCount(0); // Kosongkan tabel
-        List<Loan> pendingLoans = loanDAO.getPendingLoans(); // Asumsi method ini ada dan benar
+        tableModel.setRowCount(0); 
+        List<Loan> pendingLoans = loanDAO.getPendingLoans(); 
 
         if (pendingLoans.isEmpty()) {
-            // Opsional: tampilkan pesan jika tidak ada data, bisa dengan menambahkan label ke panel
+        
             tableModel.addRow(new Object[]{"-", "Tidak ada permintaan pending", "-", "-", null});
         } else {
             for (Loan loan : pendingLoans) {
@@ -138,7 +133,7 @@ public class LoanManagementScreen extends JFrame {
                         loan.getUsername() != null ? loan.getUsername() : "N/A",
                         loan.getBookTitle() != null ? loan.getBookTitle() : "N/A",
                         loan.getRequestDate() != null ? loan.getRequestDate().format(DATETIME_FORMATTER) : "N/A",
-                        "Aksi" // Placeholder, akan di-render oleh ActionPanelRendererAndEditor
+                        "Aksi" 
                 });
             }
         }
@@ -162,13 +157,13 @@ public class LoanManagementScreen extends JFrame {
         });
     }
 
-    // Inner class untuk menangani tombol Aksi di dalam tabel
+    
     class ActionPanelRendererAndEditor extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
         private JPanel panel;
         private JButton approveButton;
         private JButton rejectButton;
         private JTable table;
-        private int currentRow; // Menyimpan baris yang sedang di-render/edit
+        private int currentRow; 
 
         public ActionPanelRendererAndEditor(JTable table) {
             this.table = table;
@@ -189,7 +184,7 @@ public class LoanManagementScreen extends JFrame {
             panel.add(rejectButton);
         }
 
-        // Overload method styleActionButton khusus untuk inner class jika perlu style berbeda
+        
         private void styleActionButton(JButton button, Color bgColor, int width, int height) {
             button.setBackground(bgColor);
             button.setForeground(Color.WHITE);
@@ -214,33 +209,32 @@ public class LoanManagementScreen extends JFrame {
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             this.currentRow = row;
-            // Tidak perlu set background di sini karena panel sudah di-return apa adanya
+            
             return panel;
         }
 
         @Override
         public Object getCellEditorValue() {
-            return null; // Tidak ada nilai yang perlu disimpan dari editor ini
+            return null; 
         }
 
         @Override
         public boolean isCellEditable(java.util.EventObject anEvent) {
-            return true; // Selalu bisa diedit untuk memicu tombol
+            return true; 
         }
         
         @Override
         public void actionPerformed(ActionEvent e) {
-            fireEditingStopped(); // Penting untuk menghentikan mode edit sel
+            fireEditingStopped(); 
 
-            // Dapatkan idLoan dari baris saat ini, kolom pertama (indeks 0)
-            // Pastikan model tabelmu memiliki idLoan di kolom 0
+           
             Object idLoanObj = table.getModel().getValueAt(this.currentRow, 0);
-            if (idLoanObj == null || idLoanObj.toString().equals("-")) { // Cek jika placeholder
+            if (idLoanObj == null || idLoanObj.toString().equals("-")) { 
                 System.err.println("Tidak bisa melakukan aksi: ID Loan tidak valid di baris " + this.currentRow);
                 return;
             }
             
-            // Pastikan idLoanObj adalah Integer sebelum di-cast
+     
             if (!(idLoanObj instanceof Integer)) {
                 System.err.println("Tidak bisa melakukan aksi: Tipe data ID Loan tidak valid di baris " + this.currentRow + ". Ditemukan: " + idLoanObj.getClass().getName());
                 return;
@@ -261,7 +255,7 @@ public class LoanManagementScreen extends JFrame {
 
             if (success) {
                 JOptionPane.showMessageDialog(table.getParent().getParent(), actionMessage, "Status Update", JOptionPane.INFORMATION_MESSAGE);
-                loadPendingLoans(); // Muat ulang data tabel untuk merefleksikan perubahan
+                loadPendingLoans(); 
             } else {
                 JOptionPane.showMessageDialog(table.getParent().getParent(), actionMessage, "Error Update", JOptionPane.ERROR_MESSAGE);
             }
