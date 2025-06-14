@@ -56,17 +56,6 @@ public class MyFavoritesScreen extends JFrame {
         listPanel.setBackground(cardBackgroundColor);
         listPanel.setBorder(BorderFactory.createLineBorder(new Color(224, 224, 224)));
         
-        emptyFavoritesLabel = new JLabel("Anda belum memiliki buku favorit.", SwingConstants.CENTER);
-        emptyFavoritesLabel.setFont(new Font("Arial", Font.ITALIC, 16));
-        emptyFavoritesLabel.setForeground(neutralColor);
-        emptyFavoritesLabel.setVisible(false); 
-        
-        JPanel centerPanelForEmptyLabel = new JPanel(new GridBagLayout());
-        centerPanelForEmptyLabel.setOpaque(false);
-        centerPanelForEmptyLabel.add(emptyFavoritesLabel);
-        listPanel.add(centerPanelForEmptyLabel);
-
-
         JScrollPane scrollPane = new JScrollPane(listPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -83,30 +72,34 @@ public class MyFavoritesScreen extends JFrame {
         add(mainPanel);
     }
 
+    // ✅ Logika dirombak total jadi lebih simpel dan aman
     private void loadFavoriteBooks() {
-        Component[] components = listPanel.getComponents();
-        for (Component component : components) {
-            if (!(component instanceof JPanel && ((JPanel)component).getComponentCount() > 0 && ((JPanel)component).getComponent(0) == emptyFavoritesLabel)) {
-                 listPanel.remove(component);
-            }
-        }
-        if (listPanel.getComponentCount() == 1 && listPanel.getComponent(0) instanceof JPanel && ((JPanel)listPanel.getComponent(0)).getComponent(0) == emptyFavoritesLabel) {
-             emptyFavoritesLabel.setVisible(false);
-        }
+        // 1. Hapus semua komponen yang ada di listPanel
+        listPanel.removeAll();
 
+        // 2. Ambil data buku favorit terbaru
         List<Book> favoriteBooks = favoriteDAO.getUserFavoriteBooks(currentUser.getIdUser());
 
+        // 3. Cek apakah daftar favoritnya kosong
         if (favoriteBooks.isEmpty()) {
-            emptyFavoritesLabel.setVisible(true);
+            // Jika kosong, tampilkan label "belum ada favorit"
+            JPanel emptyPanel = new JPanel(new GridBagLayout());
+            emptyPanel.setOpaque(false);
+            emptyFavoritesLabel = new JLabel("Anda belum memiliki buku favorit.");
+            emptyFavoritesLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+            emptyFavoritesLabel.setForeground(neutralColor);
+            emptyPanel.add(emptyFavoritesLabel);
+            listPanel.add(emptyPanel);
         } else {
-            emptyFavoritesLabel.setVisible(false);
-             if (listPanel.getComponent(0) instanceof JPanel && ((JPanel)listPanel.getComponent(0)).getComponent(0) == emptyFavoritesLabel) {
-                listPanel.remove(0);
-            }
+            // Jika ada isinya, loop dan tambahkan setiap buku ke panel
             for (Book book : favoriteBooks) {
                 listPanel.add(createBookEntryPanel(book));
+                // Tambahkan separator antar buku
+                listPanel.add(Box.createRigidArea(new Dimension(0, 5)));
             }
         }
+
+        // 4. Perbarui UI
         listPanel.revalidate();
         listPanel.repaint();
     }
@@ -118,7 +111,9 @@ public class MyFavoritesScreen extends JFrame {
             BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(224, 224, 224)),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
-        bookEntryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, bookEntryPanel.getPreferredSize().height + 10));
+        
+        // ✅ HAPUS BARIS INI -> Penyebab masalah "gepeng"
+        // bookEntryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, bookEntryPanel.getPreferredSize().height + 10));
 
 
         JLabel coverLabel = new JLabel();
@@ -171,12 +166,15 @@ public class MyFavoritesScreen extends JFrame {
         JButton removeFavoriteButton = new JButton("💔 Hapus"); 
         styleActionButton(removeFavoriteButton, favoriteColor, 100, 30);
         removeFavoriteButton.addActionListener(e -> {
-            boolean success = favoriteDAO.removeFavorite(currentUser.getIdUser(), book.getIdBook());
-            if (success) {
-                JOptionPane.showMessageDialog(this, "\"" + book.getTitle() + "\" telah dihapus dari favorit Anda.", "Favorit Dihapus", JOptionPane.INFORMATION_MESSAGE);
-                loadFavoriteBooks(); 
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal menghapus buku dari favorit.", "Error", JOptionPane.ERROR_MESSAGE);
+            int confirm = JOptionPane.showConfirmDialog(this, "Yakin ingin menghapus \"" + book.getTitle() + "\" dari favorit?", "Konfirmasi Hapus Favorit", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                boolean success = favoriteDAO.removeFavorite(currentUser.getIdUser(), book.getIdBook());
+                if (success) {
+                    // Muat ulang daftar favorit untuk merefresh tampilan
+                    loadFavoriteBooks(); 
+                } else {
+                    JOptionPane.showMessageDialog(this, "Gagal menghapus buku dari favorit.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
             }
         });
         actionButtonsPanel.add(removeFavoriteButton);
@@ -211,7 +209,6 @@ public class MyFavoritesScreen extends JFrame {
         button.setFont(new Font("Arial", Font.BOLD, 10));
         button.setMargin(new Insets(2, 5, 2, 5)); 
         button.setPreferredSize(new Dimension(width, height));
-        // --- PERBAIKAN DI SINI ---
         button.setOpaque(true);
         button.setBorderPainted(false);
     }

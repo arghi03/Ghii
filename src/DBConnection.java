@@ -9,10 +9,16 @@ public class DBConnection {
         String password = ""; // Ganti dengan password MySQL kamu
         Connection conn = null;
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver"); // Memuat driver
+            Class.forName("com.mysql.cj.jdbc.Driver");
             System.out.println("Driver JDBC MySQL berhasil dimuat.");
+            
             conn = DriverManager.getConnection(url, user, password);
             System.out.println("Koneksi ke database berhasil! URL: " + url);
+            
+            
+            conn.setAutoCommit(true);
+            
+
         } catch (ClassNotFoundException e) {
             System.err.println("Driver JDBC MySQL tidak ditemukan: " + e.getMessage());
             e.printStackTrace();

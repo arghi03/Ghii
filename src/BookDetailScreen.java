@@ -1,18 +1,23 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.Desktop;
 import java.io.File;
+import java.io.IOException;
 
 public class BookDetailScreen extends JFrame {
     private BookDAO bookDAO;
-    private FavoriteDAO favoriteDAO; // DAO untuk fitur favorit
-    private User currentUser;        // User yang sedang login
-    private Book currentBook;        // Buku yang sedang ditampilkan detailnya
+    private LoanDAO loanDAO;
+    private FavoriteDAO favoriteDAO;
+    private User currentUser;
+    private Book currentBook;
 
     
     private Color primaryColor = new Color(30, 58, 138);
-    private Color secondaryColor = new Color(59, 130, 246); // Digunakan untuk tombol kembali dan favorit (belum difavoritkan)
-    private Color favoriteActiveColor = new Color(220, 53, 69); // Merah untuk favorit aktif
+    private Color secondaryColor = new Color(59, 130, 246);
+    private Color successColor = new Color(76, 175, 80);
+    private Color favoriteActiveColor = new Color(220, 53, 69);
     private Color backgroundColor = Color.WHITE;
+    private Color neutralColor = new Color(107, 114, 128); // ✅ INI YANG KEMARIN LUPA DITAMBAHKAN
     private Color labelColor = new Color(100, 100, 100);
     private Color textColor = new Color(33, 33, 33);
 
@@ -21,7 +26,8 @@ public class BookDetailScreen extends JFrame {
     public BookDetailScreen(int idBook, BookDAO bookDAO, User currentUser, FavoriteDAO favoriteDAO) {
         this.bookDAO = bookDAO;
         this.currentUser = currentUser;
-        this.favoriteDAO = favoriteDAO; 
+        this.favoriteDAO = favoriteDAO;
+        this.loanDAO = new LoanDAO(DBConnection.getConnection());
 
         this.currentBook = this.bookDAO.getBookById(idBook); 
 
@@ -96,26 +102,32 @@ public class BookDetailScreen extends JFrame {
 
             favoriteButton = new JButton(); 
             favoriteButton.addActionListener(e -> toggleFavoriteStatus());
-            actionPanel.add(favoriteButton);
             
-            // Tombol Pinjam (Contoh)
-            JButton borrowButton = new JButton("Pinjam Buku");
-            styleActionButton(borrowButton, new Color(76, 175, 80), 120, 35); // Warna hijau untuk pinjam
-            borrowButton.addActionListener(e -> {
-                LoanDAO tempLoanDAO = new LoanDAO(DBConnection.getConnection()); // Buat instance LoanDAO
-                boolean success = tempLoanDAO.addLoan(currentUser.getIdUser(), currentBook.getIdBook());
-                if (success) {
-                    JOptionPane.showMessageDialog(this, "Pengajuan peminjaman untuk buku \"" + currentBook.getTitle() + "\" berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            JButton readButton = new JButton("Baca Buku");
+            styleActionButton(readButton, successColor, 120, 35);
+            readButton.addActionListener(e -> {
+                if (loanDAO.isLoanApproved(currentUser.getIdUser(), currentBook.getIdBook())) {
+                    try {
+                        File pdfFile = new File(currentBook.getBookFilePath());
+                        if (pdfFile.exists()) {
+                            Desktop.getDesktop().open(pdfFile);
+                        } else {
+                            JOptionPane.showMessageDialog(this, "File PDF tidak ditemukan.", "Error", JOptionPane.ERROR_MESSAGE);
+                        }
+                    } catch (IOException | NullPointerException ex) {
+                        JOptionPane.showMessageDialog(this, "Gagal membuka file PDF.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
                 } else {
-                    JOptionPane.showMessageDialog(this, "Gagal mengajukan peminjaman untuk buku \"" + currentBook.getTitle() + "\".", "Error", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(this, "Anda harus meminjam buku ini dan menunggu persetujuan untuk membacanya.", "Akses Ditolak", JOptionPane.WARNING_MESSAGE);
                 }
             });
-            actionPanel.add(borrowButton);
-
 
             JButton backButton = new JButton("Kembali");
-            styleActionButton(backButton, secondaryColor, 100, 35);
+            styleActionButton(backButton, neutralColor, 100, 35); // Baris ini sekarang valid
             backButton.addActionListener(e -> dispose()); 
+            
+            actionPanel.add(favoriteButton);
+            actionPanel.add(readButton);
             actionPanel.add(backButton);
             
             mainPanel.add(actionPanel);

@@ -5,8 +5,6 @@ import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 
-
-
 public class BookListScreen extends JFrame {
     private BookDAO bookDAO;
     private LoanDAO loanDAO;
@@ -77,12 +75,12 @@ public class BookListScreen extends JFrame {
                     try {
                         File coverFile = new File(book.getCoverImagePath());
                         if (coverFile.exists() && !coverFile.isDirectory()) {
-                             ImageIcon imageIcon = new ImageIcon(book.getCoverImagePath());
-                             Image image = imageIcon.getImage().getScaledInstance(50, 70, Image.SCALE_SMOOTH);
-                             coverLabel.setIcon(new ImageIcon(image));
-                             coverLabel.setBorder(null); 
+                            ImageIcon imageIcon = new ImageIcon(book.getCoverImagePath());
+                            Image image = imageIcon.getImage().getScaledInstance(50, 70, Image.SCALE_SMOOTH);
+                            coverLabel.setIcon(new ImageIcon(image));
+                            coverLabel.setBorder(null); 
                         } else {
-                             coverLabel.setText("X");
+                            coverLabel.setText("X");
                         }
                     } catch (Exception e) {
                         coverLabel.setText("Err");
@@ -148,7 +146,8 @@ public class BookListScreen extends JFrame {
                 JButton previewButton = new JButton("Detail");
                 styleActionButton(previewButton, primaryColor);
                 previewButton.addActionListener(e -> {
-                    new BookDetailScreen(book.getIdBook(), bookDAO, currentUser, favoriteDAO).setVisible(true);
+                    // Membuat instance LoanDAO baru untuk dilewatkan, agar tidak ada masalah state antar layar
+                    new BookDetailScreen(book.getIdBook(), new BookDAO(DBConnection.getConnection()), currentUser, new FavoriteDAO(DBConnection.getConnection())).setVisible(true);
                 });
 
                 JButton borrowButton = new JButton("Pinjam");
@@ -162,11 +161,18 @@ public class BookListScreen extends JFrame {
                     }
                 });
 
+                // ✅ --- PERUBAHAN LOGIKA TOMBOL BACA --- ✅
                 JButton readButton = new JButton("Baca");
                 styleActionButton(readButton, secondaryColor);
-                if (loanDAO.isLoanApproved(currentUser.getIdUser(), book.getIdBook())) {
-                    readButton.setEnabled(true);
-                    readButton.addActionListener(e -> {
+                
+                // Cek status pinjaman saat membuat tombol, untuk menentukan apakah tombolnya aktif atau tidak
+                boolean isApproved = loanDAO.isLoanApproved(currentUser.getIdUser(), book.getIdBook());
+                readButton.setEnabled(isApproved);
+                
+                // Tambahkan ActionListener yang selalu ada, pengecekan dilakukan di dalamnya
+                readButton.addActionListener(e -> {
+                    // Lakukan pengecekan sekali lagi saat tombol diklik, untuk memastikan status terbaru
+                    if (loanDAO.isLoanApproved(currentUser.getIdUser(), book.getIdBook())) {
                         if (book.getBookFilePath() != null && !book.getBookFilePath().isEmpty()) {
                             try {
                                 File pdfFile = new File(book.getBookFilePath());
@@ -182,10 +188,13 @@ public class BookListScreen extends JFrame {
                         } else {
                             JOptionPane.showMessageDialog(this, "File buku (PDF) tidak tersedia untuk buku ini.", "Info", JOptionPane.INFORMATION_MESSAGE);
                         }
-                    });
-                } else {
-                    readButton.setEnabled(false);
-                }
+                    } else {
+                        // Jika ternyata pinjaman sudah tidak valid (misal, kadaluwarsa), tampilkan pesan
+                        JOptionPane.showMessageDialog(this, "Masa pinjam buku ini sudah habis atau peminjaman belum disetujui.", "Akses Ditolak", JOptionPane.WARNING_MESSAGE);
+                        readButton.setEnabled(false); // Langsung non-aktifkan tombol
+                    }
+                });
+                // ✅ --- AKHIR PERUBAHAN --- ✅
 
                 actionButtonsPanel.add(previewButton);
                 actionButtonsPanel.add(borrowButton);
@@ -223,7 +232,7 @@ public class BookListScreen extends JFrame {
         button.setFocusPainted(false);
         button.setFont(new Font("Arial", Font.BOLD, 10)); 
         button.setMargin(new Insets(2, 8, 2, 8)); 
-      
+    
         button.setOpaque(true);
         button.setBorderPainted(false);
     }

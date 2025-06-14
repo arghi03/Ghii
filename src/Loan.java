@@ -8,9 +8,10 @@ public class Loan {
     private int approvedBy;
     private LocalDateTime requestDate;
     private LocalDateTime approvedDate;
-    private LocalDateTime returnDate; // Tambah field returnDate
-    private String username; // Nama user yang meminjam
-    private String bookTitle; // Judul buku yang dipinjam
+    private LocalDateTime returnDate;
+    private String username;
+    private String bookTitle;
+    private LocalDateTime expiryDate; // ✅ FIELD BARU DITAMBAHKAN
 
     public Loan(int idLoan, int idUser, int idBook, String status, int approvedBy) {
         this.idLoan = idLoan;
@@ -47,10 +48,19 @@ public class Loan {
     public void setRequestDate(LocalDateTime requestDate) { this.requestDate = requestDate; }
     public LocalDateTime getApprovedDate() { return approvedDate; }
     public void setApprovedDate(LocalDateTime approvedDate) { this.approvedDate = approvedDate; }
-    public LocalDateTime getReturnDate() { return returnDate; } // Getter returnDate
-    public void setReturnDate(LocalDateTime returnDate) { this.returnDate = returnDate; } // Setter returnDate
+    public LocalDateTime getReturnDate() { return returnDate; }
+    public void setReturnDate(LocalDateTime returnDate) { this.returnDate = returnDate; }
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
     public String getBookTitle() { return bookTitle; }
     public void setBookTitle(String bookTitle) { this.bookTitle = bookTitle; }
+
+    // ✅ GETTER & SETTER BARU DITAMBAHKAN
+    public LocalDateTime getExpiryDate() {
+        return expiryDate;
+    }
+
+    public void setExpiryDate(LocalDateTime expiryDate) {
+        this.expiryDate = expiryDate;
+    }
 }
