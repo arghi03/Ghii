@@ -12,31 +12,27 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class LoanManagementScreen extends JFrame {
     private LoanDAO loanDAO;
-    private User currentUser; // Supervisor yang sedang login
+    private User currentUser; 
     private DefaultTableModel tableModel;
     private JTable pendingLoansTable;
 
-    // Formatter untuk tanggal dan waktu
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-    // Palet Warna
-    private Color primaryColor = new Color(30, 58, 138); // Biru tua
-    private Color successColor = new Color(28, 132, 74); // Hijau lebih tua
-    private Color dangerColor = new Color(220, 53, 69);  // Merah
-    private Color headerColor = new Color(224, 231, 255); // Biru muda untuk header tabel
+    private Color primaryColor = new Color(30, 58, 138); 
+    private Color successColor = new Color(28, 132, 74); 
+    private Color dangerColor = new Color(220, 53, 69);  
+    private Color headerColor = new Color(224, 231, 255); 
     private Color backgroundColor = new Color(240, 242, 245);
     private Color neutralColor = new Color(107, 114, 128);
-
 
     public LoanManagementScreen(User user) {
         this.currentUser = user;
         this.loanDAO = new LoanDAO(DBConnection.getConnection());
 
         setTitle("Kelola Peminjaman Pending - Supervisor: " + currentUser.getNama());
-        setSize(900, 550); // Perbesar frame untuk tabel yang lebih informatif
+        setSize(900, 550); 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -57,32 +53,28 @@ public class LoanManagementScreen extends JFrame {
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0,0,10,0));
         mainPanel.add(titleLabel, BorderLayout.NORTH);
 
-        // Setup Tabel
         String[] columnNames = {"ID Pinjam", "Nama Peminjam", "Judul Buku", "Tgl Permintaan", "Aksi"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-           
                 return column == 4; 
             }
         };
         pendingLoansTable = new JTable(tableModel);
-        pendingLoansTable.setRowHeight(30); // Tinggi baris
+        pendingLoansTable.setRowHeight(30); 
         pendingLoansTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
         pendingLoansTable.getTableHeader().setBackground(headerColor);
         pendingLoansTable.getTableHeader().setOpaque(false);
         pendingLoansTable.setFont(new Font("Arial", Font.PLAIN, 12));
         pendingLoansTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); 
 
-        // Atur lebar kolom
         TableColumnModel columnModel = pendingLoansTable.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(80);  // ID Pinjam
-        columnModel.getColumn(1).setPreferredWidth(150); // Nama Peminjam
-        columnModel.getColumn(2).setPreferredWidth(250); // Judul Buku
-        columnModel.getColumn(3).setPreferredWidth(120); // Tgl Permintaan
-        columnModel.getColumn(4).setPreferredWidth(180); // Aksi (untuk 2 tombol)
+        columnModel.getColumn(0).setPreferredWidth(80);
+        columnModel.getColumn(1).setPreferredWidth(150);
+        columnModel.getColumn(2).setPreferredWidth(250);
+        columnModel.getColumn(3).setPreferredWidth(120);
+        columnModel.getColumn(4).setPreferredWidth(180);
 
-        // Set custom renderer dan editor untuk kolom "Aksi"
         ActionPanelRendererAndEditor actionHandler = new ActionPanelRendererAndEditor(pendingLoansTable);
         columnModel.getColumn(4).setCellRenderer(actionHandler);
         columnModel.getColumn(4).setCellEditor(actionHandler);
@@ -91,7 +83,6 @@ public class LoanManagementScreen extends JFrame {
         JScrollPane scrollPane = new JScrollPane(pendingLoansTable);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Tombol Refresh dan Kembali
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setOpaque(false);
 
@@ -124,7 +115,6 @@ public class LoanManagementScreen extends JFrame {
         List<Loan> pendingLoans = loanDAO.getPendingLoans(); 
 
         if (pendingLoans.isEmpty()) {
-        
             tableModel.addRow(new Object[]{"-", "Tidak ada permintaan pending", "-", "-", null});
         } else {
             for (Loan loan : pendingLoans) {
@@ -145,7 +135,11 @@ public class LoanManagementScreen extends JFrame {
         button.setFocusPainted(false);
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setPreferredSize(new Dimension(width, height));
-        // Efek hover sederhana
+        
+      
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+        
         Color originalBgColor = bgColor; 
         button.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseEntered(java.awt.event.MouseEvent evt) {
@@ -157,7 +151,6 @@ public class LoanManagementScreen extends JFrame {
         });
     }
 
-    
     class ActionPanelRendererAndEditor extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
         private JPanel panel;
         private JButton approveButton;
@@ -168,7 +161,7 @@ public class LoanManagementScreen extends JFrame {
         public ActionPanelRendererAndEditor(JTable table) {
             this.table = table;
             panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
-            panel.setOpaque(true); // Agar background bisa di-set
+            panel.setOpaque(true);
 
             approveButton = new JButton("Setujui");
             styleActionButton(approveButton, successColor, 80, 25);
@@ -184,19 +177,20 @@ public class LoanManagementScreen extends JFrame {
             panel.add(rejectButton);
         }
 
-        
         private void styleActionButton(JButton button, Color bgColor, int width, int height) {
             button.setBackground(bgColor);
             button.setForeground(Color.WHITE);
             button.setFocusPainted(false);
-            button.setFont(new Font("Arial", Font.PLAIN, 10)); // Font lebih kecil untuk tombol di tabel
+            button.setFont(new Font("Arial", Font.PLAIN, 10)); 
             button.setPreferredSize(new Dimension(width, height));
             button.setMargin(new Insets(2,2,2,2));
+            
+            button.setOpaque(true);
+            button.setBorderPainted(false);
         }
         
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            // Set background panel sesuai dengan status seleksi baris
             if (isSelected) {
                 panel.setBackground(table.getSelectionBackground());
             } else {
@@ -209,7 +203,6 @@ public class LoanManagementScreen extends JFrame {
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             this.currentRow = row;
-            
             return panel;
         }
 
@@ -227,14 +220,12 @@ public class LoanManagementScreen extends JFrame {
         public void actionPerformed(ActionEvent e) {
             fireEditingStopped(); 
 
-           
             Object idLoanObj = table.getModel().getValueAt(this.currentRow, 0);
             if (idLoanObj == null || idLoanObj.toString().equals("-")) { 
                 System.err.println("Tidak bisa melakukan aksi: ID Loan tidak valid di baris " + this.currentRow);
                 return;
             }
             
-     
             if (!(idLoanObj instanceof Integer)) {
                 System.err.println("Tidak bisa melakukan aksi: Tipe data ID Loan tidak valid di baris " + this.currentRow + ". Ditemukan: " + idLoanObj.getClass().getName());
                 return;

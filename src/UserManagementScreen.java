@@ -48,6 +48,7 @@ public class UserManagementScreen extends JFrame {
         JLabel titleLabel = new JLabel("Manajemen Pengguna", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setForeground(primaryColor);
+        titleLabel.setBorder(BorderFactory.createEmptyBorder(0,0,10,0));
         mainPanel.add(titleLabel, BorderLayout.NORTH);
 
         String[] columnNames = {"ID", "Nama", "Email", "Role", "Status Verifikasi", "Status Akun", "Aksi"};
@@ -68,7 +69,7 @@ public class UserManagementScreen extends JFrame {
         columnModel.getColumn(3).setPreferredWidth(80);
         columnModel.getColumn(4).setPreferredWidth(120);
         columnModel.getColumn(5).setPreferredWidth(100);
-        columnModel.getColumn(6).setPreferredWidth(200); // Kolom aksi lebih lebar
+        columnModel.getColumn(6).setPreferredWidth(220); // Kolom aksi lebih lebar
 
         // Custom renderer untuk status
         DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
@@ -83,16 +84,31 @@ public class UserManagementScreen extends JFrame {
         columnModel.getColumn(6).setCellRenderer(actionHandler);
         columnModel.getColumn(6).setCellEditor(actionHandler);
 
-
         JScrollPane scrollPane = new JScrollPane(usersTable);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Panel Tombol Bawah
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottomPanel.setBackground(backgroundColor);
-        JButton backButton = new JButton("Kembali");
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setOpaque(false);
+
+        JButton refreshButton = new JButton("Refresh Daftar");
+        styleActionButton(refreshButton, primaryColor, 140, 35);
+        refreshButton.addActionListener(e -> loadAllUsers());
+
+        JButton backButton = new JButton("Kembali ke Dashboard");
+        styleActionButton(backButton, neutralColor, 180, 35);
         backButton.addActionListener(e -> dispose());
-        bottomPanel.add(backButton);
+
+        JPanel leftBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        leftBottomPanel.setOpaque(false);
+        leftBottomPanel.add(refreshButton);
+        
+        JPanel rightBottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        rightBottomPanel.setOpaque(false);
+        rightBottomPanel.add(backButton);
+        
+        bottomPanel.add(leftBottomPanel, BorderLayout.WEST);
+        bottomPanel.add(rightBottomPanel, BorderLayout.EAST);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
         add(mainPanel);
@@ -101,16 +117,20 @@ public class UserManagementScreen extends JFrame {
     private void loadAllUsers() {
         tableModel.setRowCount(0);
         List<User> allUsers = userDAO.getAllUsers();
-        for (User user : allUsers) {
-            tableModel.addRow(new Object[]{
-                user.getIdUser(),
-                user.getNama(),
-                user.getEmail(),
-                getRoleName(user.getIdRole()),
-                user.isVerified() ? "Terverifikasi" : "Belum Diverifikasi",
-                user.isActive() ? "Aktif" : "Nonaktif",
-                user // Kirim objek user ke kolom Aksi untuk diproses renderer/editor
-            });
+        if (allUsers.isEmpty()) {
+             tableModel.addRow(new Object[]{"-", "Tidak ada data pengguna.", "-", "-", "-", "-", null});
+        } else {
+            for (User user : allUsers) {
+                tableModel.addRow(new Object[]{
+                    user.getIdUser(),
+                    user.getNama(),
+                    user.getEmail(),
+                    getRoleName(user.getIdRole()),
+                    user.isVerified() ? "Terverifikasi" : "Belum Diverifikasi",
+                    user.isActive() ? "Aktif" : "Nonaktif",
+                    user // Kirim objek user ke kolom Aksi untuk diproses renderer/editor
+                });
+            }
         }
     }
     
@@ -122,8 +142,30 @@ public class UserManagementScreen extends JFrame {
             default: return "Unknown";
         }
     }
+    
+    private void styleActionButton(JButton button, Color bgColor, int width, int height) {
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Arial", Font.BOLD, 12));
+        button.setPreferredSize(new Dimension(width, height));
+        
+  
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+        
+        Color originalBgColor = bgColor; 
+        button.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseEntered(java.awt.event.MouseEvent evt) {
+                button.setBackground(originalBgColor.darker());
+            }
+            public void mouseExited(java.awt.event.MouseEvent evt) {
+                button.setBackground(originalBgColor);
+            }
+        });
+    }
 
-    // Inner class untuk renderer status dengan warna
+   
     class StatusRenderer extends DefaultTableCellRenderer {
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
@@ -140,7 +182,7 @@ public class UserManagementScreen extends JFrame {
         }
     }
     
-    // Inner class untuk menangani tombol di kolom Aksi
+   
     class UserActionPanel extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
         private JPanel panel;
         private JButton verifyButton, rejectButton, toggleActiveButton;
@@ -149,15 +191,15 @@ public class UserManagementScreen extends JFrame {
 
         public UserActionPanel(JTable table) {
             this.table = table;
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 3, 0));
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 3, 2)); // Sedikit vertical gap
             panel.setOpaque(true);
 
             verifyButton = new JButton("Verify");
             rejectButton = new JButton("Reject");
-            toggleActiveButton = new JButton(); // Teks di-set dinamis
+            toggleActiveButton = new JButton(); 
 
-            styleButton(verifyButton, successColor);
-            styleButton(rejectButton, dangerColor);
+            styleButtonInTable(verifyButton, successColor);
+            styleButtonInTable(rejectButton, dangerColor);
             
             verifyButton.addActionListener(this);
             rejectButton.addActionListener(this);
@@ -168,17 +210,18 @@ public class UserManagementScreen extends JFrame {
             panel.add(toggleActiveButton);
         }
 
-        private void styleButton(JButton button, Color color) {
+        private void styleButtonInTable(JButton button, Color color) {
             button.setFont(new Font("Arial", Font.PLAIN, 10));
             button.setBackground(color);
             button.setForeground(Color.WHITE);
             button.setMargin(new Insets(2,5,2,5));
+            button.setOpaque(true);
+            button.setBorderPainted(false);
         }
 
         private void updateButtons(User user) {
             this.selectedUser = user;
 
-            // Aturan tombol verifikasi & tolak
             if (user.isVerified()) {
                 verifyButton.setVisible(false);
                 rejectButton.setVisible(false);
@@ -187,22 +230,22 @@ public class UserManagementScreen extends JFrame {
                 rejectButton.setVisible(true);
             }
 
-            // Aturan tombol aktif/nonaktif
             if (user.isActive()) {
                 toggleActiveButton.setText("Nonaktifkan");
-                styleButton(toggleActiveButton, warningColor.darker());
+                styleButtonInTable(toggleActiveButton, warningColor.darker());
                 toggleActiveButton.setActionCommand("deactivate");
             } else {
                 toggleActiveButton.setText("Aktifkan");
-                styleButton(toggleActiveButton, successColor);
+                styleButtonInTable(toggleActiveButton, successColor);
                 toggleActiveButton.setActionCommand("activate");
             }
             
-            // Admin tidak bisa menonaktifkan dirinya sendiri
             if (user.getIdUser() == adminUser.getIdUser()) {
                 toggleActiveButton.setEnabled(false);
+                rejectButton.setEnabled(false); 
             } else {
                 toggleActiveButton.setEnabled(true);
+                rejectButton.setEnabled(true);
             }
         }
 
@@ -243,7 +286,7 @@ public class UserManagementScreen extends JFrame {
                     }
                     break;
                 case "reject":
-                     int confirm = JOptionPane.showConfirmDialog(table, "Anda yakin ingin menolak dan menghapus user " + selectedUser.getNama() + "?", "Konfirmasi Tolak", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+                     int confirm = JOptionPane.showConfirmDialog(table, "Anda yakin ingin menolak dan menghapus user " + selectedUser.getNama() + "?\nAksi ini tidak dapat dibatalkan.", "Konfirmasi Tolak", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
                      if (confirm == JOptionPane.YES_OPTION) {
                          if (userDAO.rejectUser(selectedUser.getIdUser())) {
                              JOptionPane.showMessageDialog(table, "User " + selectedUser.getNama() + " berhasil ditolak (dihapus).");
@@ -263,7 +306,7 @@ public class UserManagementScreen extends JFrame {
                     }
                     break;
             }
-            loadAllUsers(); // Refresh tabel setelah aksi
+            loadAllUsers(); 
         }
     }
 }

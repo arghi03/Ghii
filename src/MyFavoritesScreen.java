@@ -84,19 +84,15 @@ public class MyFavoritesScreen extends JFrame {
     }
 
     private void loadFavoriteBooks() {
-        
         Component[] components = listPanel.getComponents();
         for (Component component : components) {
-          
             if (!(component instanceof JPanel && ((JPanel)component).getComponentCount() > 0 && ((JPanel)component).getComponent(0) == emptyFavoritesLabel)) {
                  listPanel.remove(component);
             }
         }
-         
         if (listPanel.getComponentCount() == 1 && listPanel.getComponent(0) instanceof JPanel && ((JPanel)listPanel.getComponent(0)).getComponent(0) == emptyFavoritesLabel) {
              emptyFavoritesLabel.setVisible(false);
         }
-
 
         List<Book> favoriteBooks = favoriteDAO.getUserFavoriteBooks(currentUser.getIdUser());
 
@@ -104,7 +100,6 @@ public class MyFavoritesScreen extends JFrame {
             emptyFavoritesLabel.setVisible(true);
         } else {
             emptyFavoritesLabel.setVisible(false);
-            
              if (listPanel.getComponent(0) instanceof JPanel && ((JPanel)listPanel.getComponent(0)).getComponent(0) == emptyFavoritesLabel) {
                 listPanel.remove(0);
             }
@@ -123,7 +118,7 @@ public class MyFavoritesScreen extends JFrame {
             BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(224, 224, 224)),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
-        bookEntryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, bookEntryPanel.getPreferredSize().height + 10)); // Beri sedikit ruang lebih
+        bookEntryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, bookEntryPanel.getPreferredSize().height + 10));
 
 
         JLabel coverLabel = new JLabel();
@@ -189,7 +184,6 @@ public class MyFavoritesScreen extends JFrame {
         JButton detailButton = new JButton("Detail");
         styleActionButton(detailButton, primaryColor, 70, 30);
         detailButton.addActionListener(e -> {
-            
             new BookDetailScreen(book.getIdBook(), bookDAO, currentUser, favoriteDAO).setVisible(true);
         });
         actionButtonsPanel.add(detailButton);
@@ -217,5 +211,8 @@ public class MyFavoritesScreen extends JFrame {
         button.setFont(new Font("Arial", Font.BOLD, 10));
         button.setMargin(new Insets(2, 5, 2, 5)); 
         button.setPreferredSize(new Dimension(width, height));
+        // --- PERBAIKAN DI SINI ---
+        button.setOpaque(true);
+        button.setBorderPainted(false);
     }
 }

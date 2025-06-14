@@ -1,7 +1,6 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
+
 
 public class Login extends JFrame {
     private JTextField nameField;
@@ -10,65 +9,108 @@ public class Login extends JFrame {
     private UserDAO userDAO;
 
     public Login() {
+
         userDAO = new UserDAO(DBConnection.getConnection());
 
-        setTitle("Login");
-        setSize(400, 250);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setTitle("Login Aplikasi Perpustakaan");
+        setSize(400, 300); 
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
         setLocationRelativeTo(null);
+        setResizable(false);
 
-        JPanel panel = new JPanel();
-        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        
+        JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(new Color(245, 245, 245));
-        panel.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5); 
+        gbc.fill = GridBagConstraints.HORIZONTAL; 
 
+        // Judul
         JLabel titleLabel = new JLabel("Masuk ke Akun");
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(new Color(30, 58, 138));
-        titleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        panel.add(titleLabel);
-        panel.add(Box.createRigidArea(new Dimension(0, 20)));
+        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 2; 
+        gbc.insets = new Insets(5, 5, 20, 5); 
+        panel.add(titleLabel, gbc);
 
+        
+        gbc.gridwidth = 1;
+        gbc.insets = new Insets(5, 5, 5, 5);
+
+        // Field Nama Lengkap
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        panel.add(new JLabel("Nama Lengkap:"), gbc);
         nameField = new JTextField(20);
+        gbc.gridx = 1;
+        panel.add(nameField, gbc);
+
+        // Field Password
+        gbc.gridx = 0;
+        gbc.gridy = 2;
+        panel.add(new JLabel("Password:"), gbc);
         passwordField = new JPasswordField(20);
+        passwordField.setEchoChar('•'); 
+        gbc.gridx = 1;
+        panel.add(passwordField, gbc);
+
+        // Panel untuk tombol
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        buttonPanel.setOpaque(false); // Transparan
+
         loginButton = createStyledButton("Masuk", new Color(30, 58, 138));
         registerButton = createStyledButton("Daftar", new Color(76, 175, 80));
+        buttonPanel.add(loginButton);
+        buttonPanel.add(registerButton);
 
-        styleInput(nameField, "Nama Lengkap");
-        styleInput(passwordField, "Password");
-
-        panel.add(nameField);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(passwordField);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(loginButton);
-        panel.add(Box.createRigidArea(new Dimension(0, 10)));
-        panel.add(registerButton);
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 2;
+        gbc.insets = new Insets(20, 5, 5, 5); 
+        gbc.fill = GridBagConstraints.NONE;
+        gbc.anchor = GridBagConstraints.CENTER;
+        panel.add(buttonPanel, gbc);
 
         add(panel);
 
         loginButton.addActionListener(e -> {
-            User user = userDAO.login(nameField.getText(), new String(passwordField.getPassword()));
+            String name = nameField.getText().trim();
+            String password = new String(passwordField.getPassword()).trim();
+
+            if (name.isEmpty() || password.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Nama dan Password harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            User user = userDAO.login(name, password);
             if (user != null) {
+                // Login berhasil, periksa status verifikasi
                 System.out.println("Login berhasil untuk nama: " + user.getNama() + ", isVerified: " + user.isVerified());
                 JOptionPane.showMessageDialog(this, "Login berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+                
                 if (user.isVerified()) {
                     System.out.println("User sudah terverifikasi, navigasi ke Dashboard");
                     new Dashboard(user.getNama(), user.getEmail(), user.getIdRole()).setVisible(true);
                 } else {
+                    // Jika belum verifikasi, kirim OTP dan buka layar verifikasi
                     System.out.println("User belum terverifikasi, navigasi ke VerificationScreen");
-                    String otpCode = EmailService.sendOTP(user.getEmail());
+                    String otpCode = EmailService.sendOTP(user.getEmail()); 
                     if (otpCode != null) {
                         userDAO.saveOtp(user, otpCode);
-                        new VerificationScreen(user).setVisible(true);
+                        new VerificationScreen(user).setVisible(true); 
                     } else {
                         JOptionPane.showMessageDialog(this, "Gagal mengirim OTP! Cek koneksi atau konfigurasi email.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
-                dispose();
+                dispose(); // Tutup window Login
             } else {
+                // Login gagal
                 System.out.println("Login gagal untuk nama: " + nameField.getText());
-                JOptionPane.showMessageDialog(this, "Login gagal!", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Login gagal! Nama atau password salah, atau akun Anda tidak aktif.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -79,66 +121,31 @@ public class Login extends JFrame {
         });
     }
 
-    private void styleInput(JComponent component, String placeholder) {
-        component.setFont(new Font("Arial", Font.PLAIN, 14));
-        component.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(200, 200, 200)),
-            BorderFactory.createEmptyBorder(10, 10, 10, 10)
-        ));
-        component.setMaximumSize(new Dimension(300, 40));
-        component.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        if (component instanceof JTextField) {
-            JTextField textField = (JTextField) component;
-            textField.setText(placeholder);
-            textField.addFocusListener(new FocusAdapter() {
-                public void focusGained(FocusEvent evt) {
-                    if (textField.getText().equals(placeholder)) {
-                        textField.setText("");
-                    }
-                }
-                public void focusLost(FocusEvent evt) {
-                    if (textField.getText().isEmpty()) {
-                        textField.setText(placeholder);
-                    }
-                }
-            });
-        } else if (component instanceof JPasswordField) {
-            JPasswordField passwordField = (JPasswordField) component;
-            passwordField.setEchoChar((char) 0); // Tampilkan placeholder sebagai teks biasa
-            passwordField.setText(placeholder);
-            passwordField.addFocusListener(new FocusAdapter() {
-                public void focusGained(FocusEvent evt) {
-                    if (new String(passwordField.getPassword()).equals(placeholder)) {
-                        passwordField.setText("");
-                        passwordField.setEchoChar('•'); // Kembali ke mode password
-                    }
-                }
-                public void focusLost(FocusEvent evt) {
-                    if (new String(passwordField.getPassword()).isEmpty()) {
-                        passwordField.setEchoChar((char) 0);
-                        passwordField.setText(placeholder);
-                    }
-                }
-            });
-        }
-    }
-
     private JButton createStyledButton(String text, Color bgColor) {
         JButton button = new JButton(text);
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
         button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setPreferredSize(new Dimension(120, 40));
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
+        button.setPreferredSize(new Dimension(120, 35));
+        
+        
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+
         return button;
     }
 
     public static void main(String[] args) {
+       
+        try {
+            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         SwingUtilities.invokeLater(() -> {
-            Login login = new Login();
-            login.setVisible(true);
+            new Login().setVisible(true);
         });
     }
 }

@@ -90,6 +90,9 @@ public class LoanHistoryScreen extends JFrame {
         backButton.setForeground(Color.WHITE);
         backButton.setFont(new Font("Arial", Font.BOLD, 12));
         backButton.setFocusPainted(false);
+        // --- PERBAIKAN WARNA TOMBOL ---
+        backButton.setOpaque(true);
+        backButton.setBorderPainted(false);
         backButton.addActionListener(e -> dispose()); 
         
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10)); 
@@ -148,7 +151,7 @@ public class LoanHistoryScreen extends JFrame {
 
         public ActionPanelRendererAndEditor(JTable table) {
             this.table = table;
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 2)); // Sedikit vertical gap
             panel.setOpaque(true);
 
             returnButton = new JButton("Kembalikan");
@@ -166,6 +169,11 @@ public class LoanHistoryScreen extends JFrame {
             // Tampilkan tombol hanya jika status 'approved' atau 'borrowed'
             if ("approved".equalsIgnoreCase(status) || "borrowed".equalsIgnoreCase(status)) {
                 returnButton.setVisible(true);
+                returnButton.setBackground(returnButtonColor);
+                returnButton.setForeground(Color.WHITE);
+                // --- PERBAIKAN WARNA TOMBOL ---
+                returnButton.setOpaque(true);
+                returnButton.setBorderPainted(false);
             } else {
                 returnButton.setVisible(false);
             }
@@ -199,6 +207,11 @@ public class LoanHistoryScreen extends JFrame {
             fireEditingStopped();
             
             Object idLoanObj = table.getModel().getValueAt(this.currentRow, 0); // Kolom ID adalah indeks ke-0
+            
+            // Pengaman jika baris placeholder diklik
+            if(!(idLoanObj instanceof Integer)){
+                return;
+            }
             int loanId = (int) idLoanObj;
 
             int confirm = JOptionPane.showConfirmDialog(table, "Anda yakin ingin mengembalikan buku ini?", "Konfirmasi Pengembalian", JOptionPane.YES_NO_OPTION);

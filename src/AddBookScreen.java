@@ -6,153 +6,187 @@ public class AddBookScreen extends JFrame {
     private BookDAO bookDAO;
     private User currentUser;
     private JTextField titleField, authorField;
+    private JSpinner ratingSpinner; 
     private JLabel coverImageLabel, bookFileLabel;
     private String coverImagePath, bookFilePath;
+
+    
+    private Color primaryColor = new Color(30, 58, 138); 
+    private Color secondaryColor = new Color(59, 130, 246);
+    private Color backgroundColor = new Color(245, 245, 245); 
+    private Color successColor = new Color(76, 175, 80); 
+    private Color neutralColor = new Color(107, 114, 128);
 
     public AddBookScreen(User user) {
         this.currentUser = user;
         this.bookDAO = new BookDAO(DBConnection.getConnection());
 
         setTitle("Tambah Buku - " + currentUser.getNama());
-        setSize(450, 400);
+        setSize(550, 450); 
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
+        setResizable(false);
 
-        Color primaryColor = new Color(30, 58, 138); // Biru tua (#1E3A8A)
-        Color backgroundColor = new Color(245, 245, 245); // Abu-abu terang (#F5F5F5)
-        Color successColor = new Color(76, 175, 80); // Hijau (#4CAF50)
-        Color neutralColor = new Color(107, 114, 128); // Abu-abu (#6B7280)
+        initComponents(); // Panggil method untuk setup UI
 
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        setVisible(true);
+    }
+    
+  
+    private void initComponents() {
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 20));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(backgroundColor);
 
         JLabel titleLabel = new JLabel("Tambah Buku Baru", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(primaryColor);
         mainPanel.add(titleLabel, BorderLayout.NORTH);
 
-        JPanel formPanel = new JPanel(new GridLayout(4, 2, 10, 10));
+        JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(backgroundColor);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.anchor = GridBagConstraints.WEST;
 
-        JLabel titleFieldLabel = new JLabel("Judul:");
-        titleFieldLabel.setForeground(primaryColor);
-        titleField = new JTextField();
-        titleField.setBorder(BorderFactory.createLineBorder(neutralColor, 1));
+        // Judul
+        gbc.gridx = 0; gbc.gridy = 0;
+        formPanel.add(new JLabel("Judul Buku:"), gbc);
+        titleField = new JTextField(20);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(titleField, gbc);
+        
+        // Penulis
+        gbc.gridy++;
+        gbc.gridx = 0; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Penulis:"), gbc);
+        authorField = new JTextField(20);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(authorField, gbc);
 
-        JLabel authorFieldLabel = new JLabel("Penulis:");
-        authorFieldLabel.setForeground(primaryColor);
-        authorField = new JTextField();
-        authorField.setBorder(BorderFactory.createLineBorder(neutralColor, 1));
+        // Rating
+        gbc.gridy++;
+        gbc.gridx = 0; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Rating (0.0 - 5.0):"), gbc);
+        SpinnerNumberModel ratingModel = new SpinnerNumberModel(0.0, 0.0, 5.0, 0.1);
+        ratingSpinner = new JSpinner(ratingModel);
+        JSpinner.NumberEditor editor = new JSpinner.NumberEditor(ratingSpinner, "0.0");
+        ratingSpinner.setEditor(editor);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(ratingSpinner, gbc);
 
-        JLabel coverImageFieldLabel = new JLabel("Gambar Sampul:");
-        coverImageFieldLabel.setForeground(primaryColor);
-        JButton chooseCoverButton = new JButton("Pilih Gambar");
-        chooseCoverButton.setBackground(primaryColor);
-        chooseCoverButton.setForeground(Color.WHITE);
-        chooseCoverButton.setFocusPainted(false);
-        chooseCoverButton.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileFilter(new FileNameExtensionFilter("Image files", "jpg", "png"));
-            int result = fileChooser.showOpenDialog(this);
-            if (result == JFileChooser.APPROVE_OPTION) {
-                coverImagePath = fileChooser.getSelectedFile().getAbsolutePath();
-                coverImageLabel.setText("Dipilih: " + coverImagePath);
-            }
-        });
+        // Gambar Sampul
+        gbc.gridy++;
+        gbc.gridx = 0; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("Gambar Sampul:"), gbc);
+        JButton chooseCoverButton = createStyledButton("Pilih Gambar...", secondaryColor, 120, 30);
+        gbc.gridx = 1; gbc.gridwidth = 1;
+        formPanel.add(chooseCoverButton, gbc);
         coverImageLabel = new JLabel("Belum dipilih");
         coverImageLabel.setForeground(neutralColor);
-
-        JLabel bookFileFieldLabel = new JLabel("File Buku (PDF):");
-        bookFileFieldLabel.setForeground(primaryColor);
-        JButton chooseBookFileButton = new JButton("Pilih File");
-        chooseBookFileButton.setBackground(primaryColor);
-        chooseBookFileButton.setForeground(Color.WHITE);
-        chooseBookFileButton.setFocusPainted(false);
-        chooseBookFileButton.addActionListener(e -> {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setFileFilter(new FileNameExtensionFilter("PDF files", "pdf"));
-            int result = fileChooser.showOpenDialog(this);
-            if (result == JFileChooser.APPROVE_OPTION) {
-                bookFilePath = fileChooser.getSelectedFile().getAbsolutePath();
-                bookFileLabel.setText("Dipilih: " + bookFilePath);
-            }
-        });
+        gbc.gridx = 2; gbc.gridwidth = 1;
+        formPanel.add(coverImageLabel, gbc);
+        
+        // File Buku (PDF)
+        gbc.gridy++;
+        gbc.gridx = 0; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("File Buku (PDF):"), gbc);
+        JButton chooseBookFileButton = createStyledButton("Pilih File PDF...", secondaryColor, 120, 30);
+        gbc.gridx = 1; gbc.gridwidth = 1;
+        formPanel.add(chooseBookFileButton, gbc);
         bookFileLabel = new JLabel("Belum dipilih");
         bookFileLabel.setForeground(neutralColor);
-
-        formPanel.add(titleFieldLabel);
-        formPanel.add(titleField);
-        formPanel.add(authorFieldLabel);
-        formPanel.add(authorField);
-        formPanel.add(coverImageFieldLabel);
-        JPanel coverPanel = new JPanel(new BorderLayout(5, 0));
-        coverPanel.setBackground(backgroundColor);
-        coverPanel.add(chooseCoverButton, BorderLayout.WEST);
-        coverPanel.add(coverImageLabel, BorderLayout.CENTER);
-        formPanel.add(coverPanel);
-        formPanel.add(bookFileFieldLabel);
-        JPanel bookFilePanel = new JPanel(new BorderLayout(5, 0));
-        bookFilePanel.setBackground(backgroundColor);
-        bookFilePanel.add(chooseBookFileButton, BorderLayout.WEST);
-        bookFilePanel.add(bookFileLabel, BorderLayout.CENTER);
-        formPanel.add(bookFilePanel);
+        gbc.gridx = 2; gbc.gridwidth = 1;
+        formPanel.add(bookFileLabel, gbc);
 
         mainPanel.add(formPanel, BorderLayout.CENTER);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        // Panel Tombol
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setBackground(backgroundColor);
-        JButton saveButton = new JButton("Simpan");
-        saveButton.setBackground(successColor);
-        saveButton.setForeground(Color.WHITE);
-        saveButton.setFocusPainted(false);
-        JButton backButton = new JButton("Kembali");
-        backButton.setBackground(neutralColor);
-        backButton.setForeground(Color.WHITE);
-        backButton.setFocusPainted(false);
-
-        saveButton.addActionListener(e -> {
-            String title = titleField.getText().trim();
-            String author = authorField.getText().trim();
-            if (title.isEmpty() || author.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Judul dan penulis tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (coverImagePath == null || coverImagePath.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Silakan pilih gambar sampul!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            if (bookFilePath == null || bookFilePath.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Silakan pilih file PDF buku!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            int newBookId = bookDAO.getNewBookId();
-            Book book = new Book(newBookId, title, author, coverImagePath, bookFilePath);
-            boolean success = bookDAO.addBook(book);
-            if (success) {
-                JOptionPane.showMessageDialog(this, "Buku berhasil ditambahkan!");
-                titleField.setText("");
-                authorField.setText("");
-                coverImageLabel.setText("Belum dipilih");
-                bookFileLabel.setText("Belum dipilih");
-                coverImagePath = null;
-                bookFilePath = null;
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal menambahkan buku!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        backButton.addActionListener(e -> {
-            new Dashboard(currentUser.getNama(), currentUser.getEmail(), currentUser.getIdRole()).setVisible(true);
-            dispose();
-        });
+        JButton saveButton = createStyledButton("Simpan Buku", successColor, 140, 35);
+        JButton backButton = createStyledButton("Kembali", neutralColor, 120, 35);
 
         buttonPanel.add(saveButton);
         buttonPanel.add(backButton);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
 
+        // Action Listeners
+        chooseCoverButton.addActionListener(e -> chooseFile("Pilih Gambar Sampul", "Image files", new String[]{"jpg", "png", "jpeg"}, coverImageLabel, "cover"));
+        chooseBookFileButton.addActionListener(e -> chooseFile("Pilih File Buku", "PDF files", new String[]{"pdf"}, bookFileLabel, "book"));
+        
+        saveButton.addActionListener(e -> saveBook());
+        backButton.addActionListener(e -> dispose());
+
         add(mainPanel);
-        setVisible(true);
+    }
+    
+    private void chooseFile(String dialogTitle, String fileDesc, String[] extensions, JLabel label, String fileType) {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setDialogTitle(dialogTitle);
+        fileChooser.setFileFilter(new FileNameExtensionFilter(fileDesc, extensions));
+        int result = fileChooser.showOpenDialog(this);
+        if (result == JFileChooser.APPROVE_OPTION) {
+            String selectedPath = fileChooser.getSelectedFile().getAbsolutePath();
+            if ("cover".equals(fileType)) {
+                coverImagePath = selectedPath;
+            } else if ("book".equals(fileType)) {
+                bookFilePath = selectedPath;
+            }
+            label.setText(fileChooser.getSelectedFile().getName()); 
+            label.setToolTipText(selectedPath);
+            label.setForeground(Color.BLACK);
+        }
+    }
+
+    private void saveBook() {
+        String title = titleField.getText().trim();
+        String author = authorField.getText().trim();
+        double ratingValue = (Double) ratingSpinner.getValue();
+        float rating = (float) ratingValue;
+
+        if (title.isEmpty() || author.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Judul dan penulis tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (coverImagePath == null || coverImagePath.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Silakan pilih gambar sampul!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (bookFilePath == null || bookFilePath.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Silakan pilih file PDF buku!", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int newBookId = bookDAO.getNewBookId();
+        Book book = new Book(newBookId, title, author, coverImagePath, bookFilePath, rating);
+        boolean success = bookDAO.addBook(book);
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Buku '" + title + "' berhasil ditambahkan!");
+            titleField.setText("");
+            authorField.setText("");
+            ratingSpinner.setValue(0.0);
+            coverImageLabel.setText("Belum dipilih");
+            coverImageLabel.setForeground(neutralColor);
+            bookFileLabel.setText("Belum dipilih");
+            bookFileLabel.setForeground(neutralColor);
+            coverImagePath = null;
+            bookFilePath = null;
+        } else {
+            JOptionPane.showMessageDialog(this, "Gagal menambahkan buku! Cek konsol untuk detail.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private JButton createStyledButton(String text, Color bgColor, int width, int height) {
+        JButton button = new JButton(text);
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        button.setFont(new Font("Arial", Font.BOLD, 12));
+        button.setPreferredSize(new Dimension(width, height));
+        button.setOpaque(true);
+        button.setBorderPainted(false);
+        return button;
     }
 }

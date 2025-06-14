@@ -64,7 +64,7 @@ public class Dashboard extends JFrame {
         JPanel topPanel = new JPanel(new BorderLayout(10,5));
         topPanel.setOpaque(false);
 
-        welcomeLabel = new JLabel("Selamat Datang, " + user.getNama() + "!", SwingConstants.LEFT);
+        welcomeLabel = new JLabel("Selamat Datang di LiteraSpace, " + user.getNama() + "!", SwingConstants.LEFT);
         welcomeLabel.setFont(new Font("Arial", Font.BOLD, 20));
         welcomeLabel.setBorder(BorderFactory.createEmptyBorder(0,0,10,0));
         topPanel.add(welcomeLabel, BorderLayout.NORTH);
