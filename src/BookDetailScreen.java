@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 
@@ -17,7 +16,7 @@ public class BookDetailScreen extends JFrame {
     private Color successColor = new Color(76, 175, 80);
     private Color favoriteActiveColor = new Color(220, 53, 69);
     private Color backgroundColor = Color.WHITE;
-    private Color neutralColor = new Color(107, 114, 128); // ✅ INI YANG KEMARIN LUPA DITAMBAHKAN
+    private Color neutralColor = new Color(107, 114, 128);
     private Color labelColor = new Color(100, 100, 100);
     private Color textColor = new Color(33, 33, 33);
 
@@ -107,23 +106,15 @@ public class BookDetailScreen extends JFrame {
             styleActionButton(readButton, successColor, 120, 35);
             readButton.addActionListener(e -> {
                 if (loanDAO.isLoanApproved(currentUser.getIdUser(), currentBook.getIdBook())) {
-                    try {
-                        File pdfFile = new File(currentBook.getBookFilePath());
-                        if (pdfFile.exists()) {
-                            Desktop.getDesktop().open(pdfFile);
-                        } else {
-                            JOptionPane.showMessageDialog(this, "File PDF tidak ditemukan.", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    } catch (IOException | NullPointerException ex) {
-                        JOptionPane.showMessageDialog(this, "Gagal membuka file PDF.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
+                    // ✅ PERUBAHAN DI SINI: Memanggil PdfReaderScreen
+                    new PdfReaderScreen(currentBook.getBookFilePath());
                 } else {
                     JOptionPane.showMessageDialog(this, "Anda harus meminjam buku ini dan menunggu persetujuan untuk membacanya.", "Akses Ditolak", JOptionPane.WARNING_MESSAGE);
                 }
             });
 
             JButton backButton = new JButton("Kembali");
-            styleActionButton(backButton, neutralColor, 100, 35); // Baris ini sekarang valid
+            styleActionButton(backButton, neutralColor, 100, 35);
             backButton.addActionListener(e -> dispose()); 
             
             actionPanel.add(favoriteButton);

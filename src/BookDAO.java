@@ -18,14 +18,27 @@ public class BookDAO {
     public Connection getConnection() {
         return conn;
     }
-
-    public boolean addBook(Book book) {
+ 
+    public boolean softDeleteBook(int bookId) {
         if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa menambah buku.");
+            System.err.println("Koneksi database null! Tidak bisa menghapus buku.");
             return false;
         }
-
-        String sql = "INSERT INTO books (id_book, title, author, cover_image_path, book_file_path, rating) VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "UPDATE books SET is_deleted = 1 WHERE id_book = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, bookId);
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("Error saat soft delete buku: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+ 
+    public boolean addBook(Book book) {
+        if (conn == null) return false;
+        String sql = "INSERT INTO books (id_book, title, author, cover_image_path, book_file_path, rating, is_deleted) VALUES (?, ?, ?, ?, ?, ?, 0)";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, book.getIdBook());
             stmt.setString(2, book.getTitle());
@@ -34,139 +47,123 @@ public class BookDAO {
             stmt.setString(5, book.getBookFilePath());
             stmt.setFloat(6, book.getRating());
             int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("Buku berhasil ditambahkan: " + book.getTitle());
-                return true;
-            } else {
-                System.out.println("Gagal menambah buku: " + book.getTitle());
-                return false;
-            }
+            return affectedRows > 0;
         } catch (SQLException e) {
-            System.err.println("Error adding book: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
-    public int getNewBookId() {
-        if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa getNewBookId.");
-            throw new IllegalStateException("Koneksi database tidak tersedia");
-        }
+public boolean updateBook(Book book) {
+    if (conn == null) {
+        System.err.println("Koneksi null, tidak bisa update buku.");
+        return false;
+    }
+    String sql = "UPDATE books SET title = ?, author = ?, rating = ?, cover_image_path = ?, book_file_path = ? WHERE id_book = ?";
+    
+    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setString(1, book.getTitle());
+        stmt.setString(2, book.getAuthor());
+        stmt.setFloat(3, book.getRating());
+        stmt.setString(4, book.getCoverImagePath());
+        stmt.setString(5, book.getBookFilePath());
+        stmt.setInt(6, book.getIdBook()); // ID buku untuk WHERE clause
 
+        int affectedRows = stmt.executeUpdate();
+        return affectedRows > 0;
+    } catch (SQLException e) {
+        System.err.println("Error saat update buku: " + e.getMessage());
+        e.printStackTrace();
+        return false;
+    }
+}
+
+    public int getNewBookId() {
+        if (conn == null) throw new IllegalStateException("Koneksi database tidak tersedia");
         String sql = "SELECT MAX(id_book) + 1 AS new_id FROM books";
         try (Statement stmt = conn.createStatement();
              ResultSet rs = stmt.executeQuery(sql)) {
             if (rs.next()) {
                 int newId = rs.getInt("new_id");
-                if (newId <= 0) {
-                    return 1;
-                }
-                return newId;
+                return (newId <= 0) ? 1 : newId;
             } else {
                 return 1;
             }
         } catch (SQLException e) {
-            System.err.println("Error generating new book ID: " + e.getMessage());
             e.printStackTrace();
             throw new RuntimeException("Gagal generate ID buku baru: " + e.getMessage());
         }
     }
-
+ 
     public List<Book> getAllBooks() {
         List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM books";
-        System.out.println("Mencoba mengambil semua buku dari database...");
+        String sql = "SELECT * FROM books WHERE is_deleted = 0"; 
         try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
-            int count = 0;
             while (rs.next()) {
-                Book book = new Book(
-                    rs.getInt("id_book"),
-                    rs.getString("title"),
-                    rs.getString("author"),
-                    rs.getString("cover_image_path"),
-                    rs.getString("book_file_path"),
-                    rs.getFloat("rating")
-                );
-                books.add(book);
-                count++;
+                books.add(mapRowToBook(rs));
             }
-            System.out.println("Berhasil mengambil " + count + " buku dari database.");
         } catch (SQLException e) {
-            System.err.println("Error fetching books: " + e.getMessage());
             e.printStackTrace();
-        }
-        if (books.isEmpty()) {
-            System.out.println("Tidak ada buku yang ditemukan di database atau terjadi error.");
         }
         return books;
     }
-
+ 
     public int getTotalBooksCount() {
-        String sql = "SELECT COUNT(*) AS total FROM books";
-        System.out.println("Mencoba menghitung total buku di database...");
+        String sql = "SELECT COUNT(*) AS total FROM books WHERE is_deleted = 0";
         try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
             if (rs.next()) {
-                int total = rs.getInt("total");
-                System.out.println("Total buku di database: " + total);
-                return total;
+                return rs.getInt("total");
             }
         } catch (SQLException e) {
-            System.err.println("Error fetching total books count: " + e.getMessage());
             e.printStackTrace();
         }
-        System.out.println("Gagal menghitung total buku, mengembalikan 0.");
         return 0;
     }
-
+ 
     public List<Book> searchBooks(String keyword) {
         List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE title LIKE ? OR author LIKE ?";
-        System.out.println("Mencoba mencari buku dengan keyword: " + keyword);
+        String sql = "SELECT * FROM books WHERE (title LIKE ? OR author LIKE ?) AND is_deleted = 0";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             String searchTerm = "%" + keyword + "%";
             stmt.setString(1, searchTerm);
             stmt.setString(2, searchTerm);
             ResultSet rs = stmt.executeQuery();
-            int count = 0;
             while (rs.next()) {
-                Book book = new Book(
-                    rs.getInt("id_book"),
-                    rs.getString("title"),
-                    rs.getString("author"),
-                    rs.getString("cover_image_path"),
-                    rs.getString("book_file_path"),
-                    rs.getFloat("rating")
-                );
-                books.add(book);
-                count++;
+                books.add(mapRowToBook(rs));
             }
-            System.out.println("Ditemukan " + count + " buku dengan keyword: " + keyword);
         } catch (SQLException e) {
-            System.err.println("Error searching books: " + e.getMessage());
             e.printStackTrace();
-        }
-        if (books.isEmpty()) {
-            System.out.println("Tidak ada buku yang ditemukan dengan keyword: " + keyword);
         }
         return books;
     }
-
+     
+    public Book getBookById(int idBook) {
+        if (conn == null) return null;
+        String sql = "SELECT * FROM books WHERE id_book = ? AND is_deleted = 0";
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, idBook);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return mapRowToBook(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+ 
     public List<Loan> getLoanHistoryByUser(int idUser) {
         List<Loan> loans = new ArrayList<>();
         String sql = "SELECT l.id_loan, l.id_book, l.request_date, l.return_date, l.approved_date, l.status, l.approved_by, b.title " +
-                    "FROM loans l JOIN books b ON l.id_book = b.id_book " +
-                    "WHERE l.id_user = ?";
+                     "FROM loans l JOIN books b ON l.id_book = b.id_book " +
+                     "WHERE l.id_user = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, idUser);
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
-                LocalDateTime requestDate = rs.getTimestamp("request_date") != null ? 
-                    rs.getTimestamp("request_date").toLocalDateTime() : null;
-                LocalDateTime returnDate = rs.getTimestamp("return_date") != null ? 
-                    rs.getTimestamp("return_date").toLocalDateTime() : null;
-                LocalDateTime approvedDate = rs.getTimestamp("approved_date") != null ? 
-                    rs.getTimestamp("approved_date").toLocalDateTime() : null;
+                LocalDateTime requestDate = rs.getTimestamp("request_date") != null ? rs.getTimestamp("request_date").toLocalDateTime() : null;
+                LocalDateTime returnDate = rs.getTimestamp("return_date") != null ? rs.getTimestamp("return_date").toLocalDateTime() : null;
+                LocalDateTime approvedDate = rs.getTimestamp("approved_date") != null ? rs.getTimestamp("approved_date").toLocalDateTime() : null;
 
                 Loan loan = new Loan(
                     rs.getInt("id_loan"),
@@ -177,7 +174,7 @@ public class BookDAO {
                     requestDate,
                     approvedDate,
                     returnDate,
-                    null, // username gak diambil dari DB, bisa diisi via UserDAO kalo perlu
+                    null,
                     rs.getString("title")
                 );
                 loans.add(loan);
@@ -188,71 +185,22 @@ public class BookDAO {
         return loans;
     }
 
-    public Book getBookById(int idBook) {
-        if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa ambil buku.");
-            return null;
-        }
-
-        String sql = "SELECT * FROM books WHERE id_book = ?";
-        System.out.println("Mencoba mengambil buku dengan id: " + idBook);
-        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, idBook);
-            ResultSet rs = stmt.executeQuery();
-            if (rs.next()) {
-                Book book = new Book(
-                    rs.getInt("id_book"),
-                    rs.getString("title"),
-                    rs.getString("author"),
-                    rs.getString("cover_image_path"),
-                    rs.getString("book_file_path"),
-                    rs.getFloat("rating")
-                );
-                System.out.println("Buku ditemukan: " + book.getTitle());
-                return book;
-            } else {
-                System.out.println("Buku dengan id " + idBook + " tidak ditemukan.");
-            }
-        } catch (SQLException e) {
-            System.err.println("Error fetching book by ID: " + e.getMessage());
-            e.printStackTrace();
-        }
-        return null;
-    }
-
     public boolean updateBookRating(int idBook, float newRating) {
-        if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa update rating.");
-            return false;
-        }
-
-        String sql = "UPDATE books SET rating = (SELECT AVG(r.rating) FROM (SELECT ? AS rating) r) " +
-                     "WHERE id_book = ? AND (rating IS NULL OR (SELECT COUNT(*) FROM loans WHERE id_book = ? AND status = 'approved') > 0)";
+        if (conn == null) return false;
+        String sql = "UPDATE books SET rating = ? WHERE id_book = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setFloat(1, newRating);
             stmt.setInt(2, idBook);
-            stmt.setInt(3, idBook);
             int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("Rating buku berhasil diupdate: " + idBook);
-                return true;
-            } else {
-                System.out.println("Gagal update rating buku: " + idBook);
-                return false;
-            }
+            return affectedRows > 0;
         } catch (SQLException e) {
-            System.err.println("Error updating book rating: " + e.getMessage());
             e.printStackTrace();
             return false;
         }
     }
 
     public float getBookRating(int idBook) {
-        if (conn == null) {
-            System.err.println("Koneksi database null! Tidak bisa ambil rating.");
-            return 0.0f;
-        }
-
+        if (conn == null) return 0.0f;
         String sql = "SELECT rating FROM books WHERE id_book = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, idBook);
@@ -264,5 +212,16 @@ public class BookDAO {
             System.err.println("Error fetching book rating: " + e.getMessage());
         }
         return 0.0f;
+    }
+     
+    private Book mapRowToBook(ResultSet rs) throws SQLException {
+        return new Book(
+            rs.getInt("id_book"),
+            rs.getString("title"),
+            rs.getString("author"),
+            rs.getString("cover_image_path"),
+            rs.getString("book_file_path"),
+            rs.getFloat("rating")
+        );
     }
 }

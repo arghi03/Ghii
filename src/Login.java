@@ -57,8 +57,7 @@ public class Login extends JFrame {
         passwordField.setEchoChar('•'); 
         gbc.gridx = 1;
         panel.add(passwordField, gbc);
-
-        // Panel untuk tombol
+ 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setOpaque(false); // Transparan
 
@@ -87,16 +86,14 @@ public class Login extends JFrame {
             }
 
             User user = userDAO.login(name, password);
-            if (user != null) {
-                // Login berhasil, periksa status verifikasi
+            if (user != null) { 
                 System.out.println("Login berhasil untuk nama: " + user.getNama() + ", isVerified: " + user.isVerified());
                 JOptionPane.showMessageDialog(this, "Login berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
                 
                 if (user.isVerified()) {
                     System.out.println("User sudah terverifikasi, navigasi ke Dashboard");
                     new Dashboard(user.getNama(), user.getEmail(), user.getIdRole()).setVisible(true);
-                } else {
-                    // Jika belum verifikasi, kirim OTP dan buka layar verifikasi
+                } else { 
                     System.out.println("User belum terverifikasi, navigasi ke VerificationScreen");
                     String otpCode = EmailService.sendOTP(user.getEmail()); 
                     if (otpCode != null) {
@@ -106,9 +103,9 @@ public class Login extends JFrame {
                         JOptionPane.showMessageDialog(this, "Gagal mengirim OTP! Cek koneksi atau konfigurasi email.", "Error", JOptionPane.ERROR_MESSAGE);
                     }
                 }
-                dispose(); // Tutup window Login
+                dispose();  
             } else {
-                // Login gagal
+               
                 System.out.println("Login gagal untuk nama: " + nameField.getText());
                 JOptionPane.showMessageDialog(this, "Login gagal! Nama atau password salah, atau akun Anda tidak aktif.", "Error", JOptionPane.ERROR_MESSAGE);
             }

@@ -2,32 +2,20 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.util.List;
-// Pastikan User dan Profile diimport jika mereka ada di package berbeda
-// import com.perpustakaan.model.User; 
-// import com.perpustakaan.model.Profile;
+import java.util.Vector;
 
 public class ProfileScreen extends JFrame {
     private User currentUser;
-    private ProfileDAO profileDAO; 
-    private UserDAO userDAO;       
-    private JPanel mainPanel;
-    private JPanel headerPanel;
-    private JPanel infoPanel;
-    private JPanel actionsPanel;
-    private JPanel adminPanel;
+    private UserDAO userDAO;
+    private RoleDAO roleDAO;
 
-    private JLabel lblName;
-    private JTextField txtName;
-    // private JLabel lblPhone; // Tidak terpakai sebagai field instance
-    private JTextField txtPhone;
+    private JLabel lblNameValue;
+    private JTextField txtName, txtNim, txtEmail, txtPhone;
+    private JButton btnEdit, btnSave, btnBack;
+    
+    private boolean isEditMode = false;
 
-    private JButton btnEdit;
-    private JButton btnSave;
-    private JButton btnBack;
-
-    private boolean editMode = false;
-
-    private Color primaryColor = new Color(25, 118, 210); 
+    private Color primaryColor = new Color(30, 58, 138); 
     private Color successColor = new Color(76, 175, 80);  
     private Color secondaryColor = new Color(117, 117, 117); 
     private Color backgroundColor = new Color(240, 242, 245); 
@@ -37,8 +25,8 @@ public class ProfileScreen extends JFrame {
 
     public ProfileScreen(User user) {
         this.currentUser = user;
-        this.profileDAO = new ProfileDAO(DBConnection.getConnection());
         this.userDAO = new UserDAO(DBConnection.getConnection());
+        this.roleDAO = new RoleDAO(DBConnection.getConnection());
 
         setTitle("Profil Pengguna - " + currentUser.getNama());
         setSize(600, 700); 
@@ -53,27 +41,18 @@ public class ProfileScreen extends JFrame {
     }
 
     private void initComponents() {
-        mainPanel = new JPanel(new BorderLayout(0, 20)); 
+        JPanel mainPanel = new JPanel(new BorderLayout(0, 20)); 
         mainPanel.setBackground(backgroundColor);
         mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20)); 
 
-        headerPanel = new JPanel();
+        JPanel headerPanel = createCardPanel();
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
-        headerPanel.setBackground(cardColor);
-        headerPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(224, 224, 224)), 
-            new EmptyBorder(20, 20, 20, 20)
-        ));
 
-        JLabel nameHeaderTitleLabel = new JLabel("NAMA PENGGUNA");
-        nameHeaderTitleLabel.setFont(new Font("Arial", Font.BOLD, 11));
-        nameHeaderTitleLabel.setForeground(labelColor);
-        nameHeaderTitleLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-        lblName = new JLabel(currentUser.getNama());
-        lblName.setFont(new Font("Arial", Font.BOLD, 22));
-        lblName.setForeground(textColor);
-        lblName.setAlignmentX(Component.CENTER_ALIGNMENT);
+        JLabel nameHeaderTitleLabel = createTitleLabel("NAMA PENGGUNA");
+        lblNameValue = new JLabel(currentUser.getNama());
+        lblNameValue.setFont(new Font("Arial", Font.BOLD, 22));
+        lblNameValue.setForeground(textColor);
+        lblNameValue.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         txtName = new JTextField(currentUser.getNama(), 20);
         txtName.setFont(new Font("Arial", Font.BOLD, 20));
@@ -81,145 +60,42 @@ public class ProfileScreen extends JFrame {
         txtName.setVisible(false);
         txtName.setMaximumSize(new Dimension(300, txtName.getPreferredSize().height + 5));
         txtName.setAlignmentX(Component.CENTER_ALIGNMENT);
-
+        
         headerPanel.add(nameHeaderTitleLabel);
         headerPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-        headerPanel.add(lblName);
+        headerPanel.add(lblNameValue);
         headerPanel.add(txtName);
 
-        infoPanel = new JPanel();
+        JPanel infoPanel = createCardPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-        infoPanel.setBackground(cardColor);
-        infoPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(224, 224, 224)),
-            new EmptyBorder(20, 20, 20, 20)
-        ));
 
-        infoPanel.add(createInfoPanel("NIM", currentUser.getNim() != null ? currentUser.getNim() : "-"));
-        infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        infoPanel.add(createInfoPanel("EMAIL", currentUser.getEmail()));
-        infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        txtNim = createInfoTextField(currentUser.getNim());
+        txtEmail = createInfoTextField(currentUser.getEmail());
+        txtPhone = createInfoTextField(currentUser.getNomorTelepon());
 
-        JPanel phonePanelContainer = new JPanel();
-        phonePanelContainer.setLayout(new BoxLayout(phonePanelContainer, BoxLayout.Y_AXIS));
-        phonePanelContainer.setBackground(cardColor);
-        JLabel phoneTitleLabel = new JLabel("NOMOR TELEPON");
-        phoneTitleLabel.setFont(new Font("Arial", Font.BOLD, 11));
-        phoneTitleLabel.setForeground(labelColor);
-        txtPhone = new JTextField(currentUser.getNomorTelepon() != null ? currentUser.getNomorTelepon() : "", 20);
-        txtPhone.setFont(new Font("Arial", Font.PLAIN, 16));
-        txtPhone.setForeground(textColor);
-        txtPhone.setEditable(false);
-        txtPhone.setBackground(cardColor);
-        txtPhone.setBorder(BorderFactory.createEmptyBorder(2,0,2,0)); 
-        phonePanelContainer.add(phoneTitleLabel);
-        phonePanelContainer.add(Box.createRigidArea(new Dimension(0, 5)));
-        phonePanelContainer.add(txtPhone);
-        infoPanel.add(phonePanelContainer);
+        infoPanel.add(createDetailEntry("NIM", txtNim));
         infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-
+        infoPanel.add(createDetailEntry("EMAIL", txtEmail));
+        infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+        infoPanel.add(createDetailEntry("NOMOR TELEPON", txtPhone));
+        infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         infoPanel.add(createInfoPanel("ROLE", getRoleName(currentUser.getIdRole())));
 
-        adminPanel = new JPanel();
-        adminPanel.setLayout(new BoxLayout(adminPanel, BoxLayout.Y_AXIS));
-        adminPanel.setBackground(cardColor);
-        adminPanel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(new Color(224, 224, 224)),
-            new EmptyBorder(15, 15, 15, 15)
-        ));
+        JPanel adminPanel = createAdminPanel();
         adminPanel.setVisible(currentUser.getIdRole() == 1); 
 
-        JLabel adminTitleLabel = new JLabel("Kelola Role Pengguna Lain");
-        adminTitleLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        adminTitleLabel.setForeground(textColor);
-        adminTitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JComboBox<String> userCombo = new JComboBox<>();
-        userCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        JComboBox<String> roleCombo = new JComboBox<>(new String[]{"Admin", "Supervisor", "User"}); 
-        roleCombo.setFont(new Font("Arial", Font.PLAIN, 12));
-        JButton btnChangeRole = createStyledButton("Ubah Role User", primaryColor, 150, 35);
-
-        final List<Profile> profiles = profileDAO.getAllProfiles(); 
-        if (profiles != null) {
-            for (Profile p : profiles) {
-                if (p.getIdUser() != currentUser.getIdUser()) {
-                     userCombo.addItem(p.getNama() + " (ID: " + p.getIdUser() + ")");
-                }
-            }
-        }
-
-        btnChangeRole.addActionListener(e -> {
-            int selectedUserDisplayIndex = userCombo.getSelectedIndex();
-            if (selectedUserDisplayIndex >= 0) {
-                Profile selectedProfileToChange = null;
-                int displayIndexCounter = -1;
-                for(Profile p : profiles){ // profiles list harus accessible di sini
-                    if(p.getIdUser() != currentUser.getIdUser()){
-                        displayIndexCounter++;
-                        if(displayIndexCounter == selectedUserDisplayIndex){
-                            selectedProfileToChange = p;
-                            break;
-                        }
-                    }
-                }
-
-                if (selectedProfileToChange == null) {
-                     JOptionPane.showMessageDialog(this, "Gagal mendapatkan profil user yang dipilih.", "Error", JOptionPane.ERROR_MESSAGE);
-                     return;
-                }
-
-                int newRoleId = roleCombo.getSelectedIndex() + 1; 
-
-                if (profileDAO.isValidRole(newRoleId)) { 
-                    User userToUpdate = userDAO.getUserById(selectedProfileToChange.getIdUser());
-
-                    if (userToUpdate != null) {
-                        userToUpdate.setIdRole(newRoleId); 
-                        boolean success = userDAO.updateUser(userToUpdate); 
-
-                        if (success) {
-                            JOptionPane.showMessageDialog(this, "Role untuk " + userToUpdate.getNama() + " berhasil diubah menjadi " + getRoleName(newRoleId) + "!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-                            if (currentUser.getIdUser() == userToUpdate.getIdUser()) {
-                                this.currentUser = userDAO.getUserById(currentUser.getIdUser()); 
-                                loadUserData(); 
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(this, "Gagal mengubah role di database!", "Error", JOptionPane.ERROR_MESSAGE);
-                        }
-                    } else {
-                         JOptionPane.showMessageDialog(this, "User dengan ID " + selectedProfileToChange.getIdUser() + " tidak ditemukan untuk update.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(this, "Role ID " + newRoleId + " tidak valid!", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Pilih user terlebih dahulu!", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        adminPanel.add(adminTitleLabel);
-        adminPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        adminPanel.add(new JLabel("Pilih User:"));
-        adminPanel.add(userCombo);
-        adminPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-        adminPanel.add(new JLabel("Pilih Role Baru:"));
-        adminPanel.add(roleCombo);
-        adminPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        adminPanel.add(btnChangeRole);
-
-        actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         actionsPanel.setBackground(backgroundColor);
 
-        btnEdit = createStyledButton("Edit Profil Saya", primaryColor, 150, 40);
-        btnSave = createStyledButton("Simpan Perubahan", successColor, 160, 40);
+        btnEdit = createStyledButton("Edit Profil", primaryColor, 150, 40);
+        btnSave = createStyledButton("Simpan", successColor, 160, 40);
         btnSave.setVisible(false);
-        btnBack = createStyledButton("Kembali ke Dashboard", secondaryColor, 180, 40);
+        btnBack = createStyledButton("Kembali", secondaryColor, 180, 40);
 
         actionsPanel.add(btnEdit);
         actionsPanel.add(btnSave);
         actionsPanel.add(btnBack);
-
+        
         mainPanel.add(headerPanel, BorderLayout.NORTH);
         mainPanel.add(infoPanel, BorderLayout.CENTER);
 
@@ -233,23 +109,157 @@ public class ProfileScreen extends JFrame {
 
         add(mainPanel);
 
-        btnEdit.addActionListener(e -> toggleEditMode());
-        btnSave.addActionListener(e -> saveCurrentUserProfile());
-        
-        // --- PERUBAHAN DI SINI ---
-        btnBack.addActionListener(e -> {
-            System.out.println("Kembali ke dashboard dari ProfileScreen untuk: " + currentUser.getNama());
-            dispose(); // Cukup tutup window ProfileScreen ini
-            // Asumsi Dashboard utama masih ada dan akan terlihat kembali
-            // Tidak perlu membuat instance Dashboard baru:
-            // new Dashboard(currentUser.getNama(), currentUser.getEmail(), currentUser.getIdRole()).setVisible(true); 
+        btnEdit.addActionListener(e -> toggleEditMode(true));
+        btnSave.addActionListener(e -> saveUserProfile());
+        btnBack.addActionListener(e -> dispose());
+    }
+
+    private JPanel createAdminPanel() {
+        JPanel adminPanel = createCardPanel();
+        adminPanel.setLayout(new BoxLayout(adminPanel, BoxLayout.Y_AXIS));
+
+        JLabel adminTitleLabel = new JLabel("Kelola Role Pengguna Lain");
+        adminTitleLabel.setFont(new Font("Arial", Font.BOLD, 14));
+        adminTitleLabel.setForeground(textColor);
+        adminTitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        List<User> allUsers = userDAO.getAllUsers();
+        List<Role> allRoles = roleDAO.getAllRoles();
+
+        Vector<User> userModel = new Vector<>();
+        for (User u : allUsers) {
+            if (u.getIdUser() != currentUser.getIdUser()) {
+                userModel.add(u);
+            }
+        }
+
+        JComboBox<User> userCombo = new JComboBox<>(userModel);
+        userCombo.setRenderer(new UserComboBoxRenderer());
+
+        JComboBox<Role> roleCombo = new JComboBox<>(new Vector<>(allRoles));
+
+        JButton btnChangeRole = createStyledButton("Ubah Role", primaryColor, 150, 35);
+        btnChangeRole.addActionListener(e -> {
+            User selectedUser = (User) userCombo.getSelectedItem();
+            Role selectedRole = (Role) roleCombo.getSelectedItem();
+
+            if (selectedUser == null || selectedRole == null) {
+                JOptionPane.showMessageDialog(this, "Pilih user dan role terlebih dahulu!", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
+            selectedUser.setIdRole(selectedRole.getId());
+            boolean success = userDAO.updateUser(selectedUser);
+
+            if (success) {
+                JOptionPane.showMessageDialog(this, "Role untuk " + selectedUser.getNama() + " berhasil diubah.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Gagal mengubah role.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         });
+
+        adminPanel.add(adminTitleLabel);
+        adminPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        adminPanel.add(new JLabel("Pilih User:"));
+        adminPanel.add(userCombo);
+        adminPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+        adminPanel.add(new JLabel("Pilih Role Baru:"));
+        adminPanel.add(roleCombo);
+        adminPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        adminPanel.add(btnChangeRole);
+        return adminPanel;
+    }
+
+    private void toggleEditMode(boolean isEditing) {
+        this.isEditMode = isEditing;
+        lblNameValue.setVisible(!isEditing);
+        txtName.setVisible(isEditing);
+        txtNim.setEditable(isEditing);
+        txtEmail.setEditable(isEditing);
+        txtPhone.setEditable(isEditing);
+
+        Color fieldBgColor = isEditing ? Color.WHITE : cardColor;
+        txtNim.setBackground(fieldBgColor);
+        txtEmail.setBackground(fieldBgColor);
+        txtPhone.setBackground(fieldBgColor);
+        
+        btnEdit.setVisible(!isEditing);
+        btnSave.setVisible(isEditing);
+
+        if (isEditing) {
+            txtName.requestFocusInWindow();
+        }
+    }
+
+    private void saveUserProfile() {
+        String newName = txtName.getText().trim();
+        String newNim = txtNim.getText().trim();
+        String newEmail = txtEmail.getText().trim();
+        String newPhone = txtPhone.getText().trim();
+
+        if (newName.isEmpty() || newEmail.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Nama dan Email tidak boleh kosong!", "Validasi Gagal", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        currentUser.setNama(newName);
+        currentUser.setNim(newNim);
+        currentUser.setEmail(newEmail);
+        currentUser.setNomorTelepon(newPhone);
+        
+        boolean success = userDAO.updateUser(currentUser);
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Profil berhasil diperbarui!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            setTitle("Profil Pengguna - " + newName); // Update window title
+            loadUserData();
+            toggleEditMode(false);
+        } else {
+            JOptionPane.showMessageDialog(this, "Gagal memperbarui profil!", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadUserData() {
+        this.currentUser = userDAO.getUserById(currentUser.getIdUser());
+        lblNameValue.setText(currentUser.getNama());
+        txtName.setText(currentUser.getNama());
+        txtNim.setText(currentUser.getNim());
+        txtEmail.setText(currentUser.getEmail());
+        txtPhone.setText(currentUser.getNomorTelepon());
+    }
+
+    private String getRoleName(int idRole) {
+        switch (idRole) {
+            case 1: return "Admin";
+            case 2: return "Supervisor";
+            case 3: return "User";
+            default: return "Unknown";
+        }
+    }
+    
+    private JPanel createDetailEntry(String labelText, JComponent component) {
+        JPanel entryPanel = new JPanel();
+        entryPanel.setLayout(new BoxLayout(entryPanel, BoxLayout.Y_AXIS));
+        entryPanel.setOpaque(false);
+        entryPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel lblTitle = new JLabel(labelText);
+        lblTitle.setFont(new Font("Arial", Font.BOLD, 11));
+        lblTitle.setForeground(labelColor);
+        lblTitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        component.setAlignmentX(Component.LEFT_ALIGNMENT);
+        
+        entryPanel.add(lblTitle);
+        entryPanel.add(Box.createRigidArea(new Dimension(0, 3)));
+        entryPanel.add(component);
+
+        return entryPanel;
     }
 
     private JPanel createInfoPanel(String label, String value) {
         JPanel panel = new JPanel();
         panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
-        panel.setBackground(cardColor);
+        panel.setOpaque(false);
         panel.setAlignmentX(Component.LEFT_ALIGNMENT); 
 
         JLabel lblTitle = new JLabel(label);
@@ -265,6 +275,34 @@ public class ProfileScreen extends JFrame {
         panel.add(lblValue);
 
         return panel;
+    }
+
+    private JTextField createInfoTextField(String value) {
+        JTextField textField = new JTextField(value != null ? value : "", 20);
+        textField.setFont(new Font("Arial", Font.PLAIN, 16));
+        textField.setForeground(textColor);
+        textField.setEditable(false);
+        textField.setOpaque(false);
+        textField.setBorder(BorderFactory.createEmptyBorder(2,0,2,0));
+        return textField;
+    }
+
+    private JPanel createCardPanel() {
+        JPanel panel = new JPanel();
+        panel.setBackground(cardColor);
+        panel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createLineBorder(new Color(224, 224, 224)), 
+            new EmptyBorder(20, 20, 20, 20)
+        ));
+        return panel;
+    }
+
+    private JLabel createTitleLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Arial", Font.BOLD, 11));
+        label.setForeground(labelColor);
+        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        return label;
     }
 
     private JButton createStyledButton(String text, Color bgColor, int width, int height) {
@@ -286,92 +324,33 @@ public class ProfileScreen extends JFrame {
         return button;
     }
     
-    private String getRoleName(int idRole) {
-        String roleName = profileDAO.getRoleName(idRole);
-        return roleName != null ? roleName : "Tidak Diketahui";
-    }
-
-    private void loadUserData() {
-        User freshCurrentUser = userDAO.getUserById(currentUser.getIdUser());
-        if (freshCurrentUser != null) {
-            this.currentUser = freshCurrentUser; 
-        } else {
-            JOptionPane.showMessageDialog(this, "Gagal memuat ulang data user terkini!", "Error", JOptionPane.ERROR_MESSAGE);
-            // Jika user tidak ditemukan lagi, kembali ke Dashboard (dengan data lama user) atau Login
-            // Untuk amannya, kita bisa saja menutup ProfileScreen
-            // dispose(); 
-            // new Login().setVisible(true); // atau ke Login
-            // Untuk sementara, biarkan user data yang lama
-            System.err.println("ProfileScreen: Gagal refresh currentUser, menggunakan data lama.");
+    // ✅ Renderer kustom untuk JComboBox User yang sekarang sudah lengkap
+    class UserComboBoxRenderer extends JLabel implements ListCellRenderer<User> {
+        public UserComboBoxRenderer() {
+            setOpaque(true);
         }
 
-        lblName.setText(currentUser.getNama());
-        txtName.setText(currentUser.getNama());
-        
-        infoPanel.removeAll(); 
-
-        infoPanel.add(createInfoPanel("NIM", currentUser.getNim() != null ? currentUser.getNim() : "-"));
-        infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        infoPanel.add(createInfoPanel("EMAIL", currentUser.getEmail()));
-        infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-        
-        JPanel phonePanelContainer = new JPanel(); 
-        phonePanelContainer.setLayout(new BoxLayout(phonePanelContainer, BoxLayout.Y_AXIS));
-        phonePanelContainer.setBackground(cardColor);
-        JLabel phoneTitleLabel = new JLabel("NOMOR TELEPON");
-        phoneTitleLabel.setFont(new Font("Arial", Font.BOLD, 11));
-        phoneTitleLabel.setForeground(labelColor);
-        txtPhone.setText(currentUser.getNomorTelepon() != null ? currentUser.getNomorTelepon() : "");
-        phonePanelContainer.add(phoneTitleLabel);
-        phonePanelContainer.add(Box.createRigidArea(new Dimension(0, 5)));
-        phonePanelContainer.add(txtPhone);
-        infoPanel.add(phonePanelContainer);
-        infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
-
-        infoPanel.add(createInfoPanel("ROLE", getRoleName(currentUser.getIdRole())));
-        
-        infoPanel.revalidate();
-        infoPanel.repaint();
-
-        adminPanel.setVisible(currentUser.getIdRole() == 1); 
-    }
-
-    private void toggleEditMode() {
-        editMode = !editMode;
-        lblName.setVisible(!editMode);
-        txtName.setVisible(editMode);
-        txtPhone.setEditable(editMode);
-        txtPhone.setBorder(editMode ? BorderFactory.createLineBorder(primaryColor.darker()) : BorderFactory.createEmptyBorder(2,0,2,0));
-        txtPhone.setBackground(editMode ? Color.WHITE : cardColor);
-        btnEdit.setVisible(!editMode);
-        btnSave.setVisible(editMode);
-        if (editMode) {
-            txtName.requestFocusInWindow();
-        }
-    }
-
-    private void saveCurrentUserProfile() {
-        String newName = txtName.getText().trim();
-        String newPhone = txtPhone.getText().trim();
-        if (newName.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Nama tidak boleh kosong!", "Validasi Gagal", JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-        currentUser.setNama(newName);
-        currentUser.setNomorTelepon(newPhone);
-        boolean success = userDAO.updateUser(currentUser);
-        if (success) {
-            JOptionPane.showMessageDialog(this, "Profil berhasil diperbarui!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-            lblName.setText(newName); 
-            // loadUserData(); // Tidak perlu jika hanya nama & telepon, agar tidak refresh semua
-            toggleEditMode(); 
-        } else {
-            JOptionPane.showMessageDialog(this, "Gagal memperbarui profil di database!", "Error", JOptionPane.ERROR_MESSAGE);
-            User oldData = userDAO.getUserById(currentUser.getIdUser()); 
-            if(oldData != null) {
-                currentUser = oldData; // Kembalikan data objek currentUser
-                loadUserData(); // Muat ulang tampilan dengan data lama dari DB
+        @Override
+        public Component getListCellRendererComponent(JList<? extends User> list, 
+                                                      User user, 
+                                                      int index, 
+                                                      boolean isSelected, 
+                                                      boolean cellHasFocus) {
+            
+            if (user != null) {
+                setText(user.getNama() + " (ID: " + user.getIdUser() + ")");
+            } else {
+                setText("");
             }
+
+            if (isSelected) {
+                setBackground(list.getSelectionBackground());
+                setForeground(list.getSelectionForeground());
+            } else {
+                setBackground(list.getBackground());
+                setForeground(list.getForeground());
+            }
+            return this;
         }
     }
 }

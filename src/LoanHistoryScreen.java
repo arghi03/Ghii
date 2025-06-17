@@ -94,8 +94,7 @@ public class LoanHistoryScreen extends JFrame {
         add(mainPanel);
     }
 
-    private void loadLoanHistory() {
-        // ✅ PERUBAHAN DI SINI: Panggil method update otomatis SEBELUM mengambil data
+    private void loadLoanHistory() { 
         loanDAO.expireUserLoans(currentUser.getIdUser());
 
         tableModel.setRowCount(0); 
@@ -104,7 +103,7 @@ public class LoanHistoryScreen extends JFrame {
         if (loans.isEmpty()) {
             
             tableModel.addRow(new Object[]{"-", "Belum ada riwayat peminjaman.", "-", "-", "-", "-", "-"});
-            return; // Keluar dari method setelah menampilkan pesan
+            return;  
         }
 
         for (Loan loan : loans) {
