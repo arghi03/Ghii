@@ -1,8 +1,15 @@
 import java.sql.*;
+import java.time.LocalDate; // -> IMPORT BARU
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+// Asumsi kelas-kelas lain sudah ada
+// class Book { public Book(int a, String b, String c, String d, String e, float f){} }
+// class Loan { public Loan(int a, int b, int c, String d, int e, LocalDateTime f, LocalDateTime g, LocalDateTime h, String i, String j){} public void setUsername(String s){} public void setBookTitle(String s){} public void setRequestDate(LocalDateTime d){} public void setExpiryDate(LocalDateTime d){} }
 
 public class LoanDAO {
     private Connection conn;
@@ -15,23 +22,14 @@ public class LoanDAO {
         }
     }
 
-    /**
-     * ✅ METHOD BARU UNTUK OTOMATISASI
-     * Method ini akan mengubah status pinjaman dari 'approved' menjadi 'returned'
-     * untuk semua buku yang sudah melewati tanggal kadaluwarsa (expiry_date)
-     * milik seorang user.
-     */
+    // ... (semua method lain dari expireUserLoans sampai addLoan tetap sama) ...
     public void expireUserLoans(int userId) {
-        // Query untuk update status buku yang sudah kadaluwarsa
         String sql = "UPDATE loans SET status = 'returned', return_date = expiry_date " +
                      "WHERE id_user = ? AND status = 'approved' AND expiry_date < NOW()";
         
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("Berhasil mengupdate " + affectedRows + " pinjaman yang kadaluwarsa untuk user ID: " + userId);
-            }
+            stmt.executeUpdate();
         } catch (SQLException e) {
             System.err.println("Error saat mencoba mengupdate pinjaman kadaluwarsa untuk user ID " + userId + ": " + e.getMessage());
             e.printStackTrace();
@@ -92,7 +90,7 @@ public class LoanDAO {
                     rs.getInt("id_user"),
                     rs.getInt("id_book"),
                     "pending",
-                    0
+                    0, null, null, null, null, null
                 );
                 loan.setUsername(rs.getString("username"));
                 loan.setBookTitle(rs.getString("book_title"));
@@ -142,6 +140,130 @@ public class LoanDAO {
         }
         return loans;
     }
+
+    public Book getLastReadBook(int userId) {
+        if (conn == null) return null;
+        
+        String sql = "SELECT b.* FROM loans l " +
+                     "JOIN books b ON l.id_book = b.id_book " +
+                     "WHERE l.id_user = ? AND l.status = 'approved' " +
+                     "ORDER BY l.approved_date DESC LIMIT 1";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId);
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                return new Book(
+                    rs.getInt("id_book"),
+                    rs.getString("title"),
+                    rs.getString("author"),
+                    rs.getString("cover_image_path"),
+                    rs.getString("book_file_path"),
+                    rs.getFloat("rating")
+                );
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching last read book for user ID " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public int getTotalLoans() {
+        if (conn == null) return 0;
+        String sql = "SELECT COUNT(*) AS total FROM loans";
+        try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+    
+    public Map<String, Integer> getTopBorrowedBooks(int limit) {
+        Map<String, Integer> topBooks = new LinkedHashMap<>();
+        if (conn == null) return topBooks;
+
+        String sql = "SELECT b.title, COUNT(l.id_book) AS loan_count " +
+                     "FROM loans l " +
+                     "JOIN books b ON l.id_book = b.id_book " +
+                     "GROUP BY l.id_book, b.title " +
+                     "ORDER BY loan_count DESC " +
+                     "LIMIT ?";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, limit);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                String title = rs.getString("title");
+                int count = rs.getInt("loan_count");
+                topBooks.put(title, count);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching top borrowed books: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return topBooks;
+    }
+
+    public Map<String, Integer> getLoanStatusCounts() {
+        Map<String, Integer> statusCounts = new LinkedHashMap<>();
+        if (conn == null) return statusCounts;
+
+        String sql = "SELECT status, COUNT(*) AS count FROM loans GROUP BY status";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                String status = rs.getString("status");
+                int count = rs.getInt("count");
+                String formattedStatus = status.substring(0, 1).toUpperCase() + status.substring(1).toLowerCase();
+                statusCounts.put(formattedStatus, count);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching loan status counts: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return statusCounts;
+    }
+
+    /**
+     * ✅✅✅ METHOD FINAL BOSS UNTUK DIAGRAM GARIS ✅✅✅
+     * Mengambil data jumlah peminjaman per hari selama rentang waktu tertentu.
+     * @param days Jumlah hari ke belakang yang ingin ditarik datanya.
+     * @return Map dengan key LocalDate (tanggal) dan value Integer (jumlah peminjaman).
+     */
+    public Map<LocalDate, Integer> getDailyLoanCounts(int days) {
+        Map<LocalDate, Integer> dailyCounts = new LinkedHashMap<>();
+        if (conn == null) return dailyCounts;
+
+        // Query ini menghitung jumlah peminjaman per tanggal (DATE(request_date))
+        // untuk rentang waktu x hari ke belakang dari sekarang.
+        String sql = "SELECT DATE(request_date) AS loan_date, COUNT(*) AS count " +
+                     "FROM loans " +
+                     "WHERE request_date >= CURDATE() - INTERVAL ? DAY " +
+                     "GROUP BY loan_date " +
+                     "ORDER BY loan_date ASC";
+
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, days);
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                // Mengambil tanggal sebagai java.sql.Date, lalu konversi ke java.time.LocalDate
+                LocalDate date = rs.getDate("loan_date").toLocalDate();
+                int count = rs.getInt("count");
+                dailyCounts.put(date, count);
+            }
+        } catch (SQLException e) {
+            System.err.println("Error fetching daily loan counts: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return dailyCounts;
+    }
+
 
     public boolean addLoan(int idUser, int idBook) {
         String sql = "INSERT INTO loans (id_user, id_book, status, request_date) VALUES (?, ?, 'pending', NOW())";

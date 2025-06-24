@@ -1,18 +1,7 @@
-import javax.swing.*;
-import javax.swing.border.Border;
+import javax.swing.*; 
 import java.awt.*;
 import java.util.List;
 import java.io.File;
-
-// Asumsi kelas-kelas lain sudah ada di project Anda
-// public class User { public int getIdUser() {return 1;} public String getNama() {return "User";} }
-// public class Book { public String getTitle(){return "Contoh Judul Buku";} public String getAuthor(){return "Contoh Penulis";} public double getRating(){return 4.5;} public String getCoverImagePath(){return "path/to/cover.jpg";} public int getIdBook(){return 1;} public String getBookFilePath(){return "path/to/book.pdf";} }
-// public class BookDAO { public BookDAO(java.sql.Connection c){} public List<Book> getAllBooks(){return new java.util.ArrayList<>();} public List<Book> searchBooks(String keyword) { System.out.println("Mencari buku dengan keyword: " + keyword); return new java.util.ArrayList<>(); } }
-// public class LoanDAO { public LoanDAO(java.sql.Connection c){} public boolean addLoan(int u, int b){return true;} public boolean isLoanApproved(int u, int b){return true;} }
-// public class FavoriteDAO { public FavoriteDAO(java.sql.Connection c){} public boolean isFavorite(int u, int b){return false;} public boolean removeFavorite(int u, int b){return true;} public boolean addFavorite(int u, int b){return true;} }
-// public class DBConnection { public static java.sql.Connection getConnection(){return null;} }
-// public class BookDetailScreen extends JFrame { public BookDetailScreen(int bookId, BookDAO bookDAO, User user, FavoriteDAO favoriteDAO) {} }
-// public class PdfReaderScreen extends JFrame { public PdfReaderScreen(String path) {} }
 
 
 public class BookListScreen extends JFrame {

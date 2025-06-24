@@ -191,6 +191,20 @@ public class UserDAO {
         } catch (SQLException e) { e.printStackTrace(); }
         return users;
     }
+
+    // ✅✅✅ METHOD BARU UNTUK STATISTIK ✅✅✅
+    public int getTotalUsers() {
+        if (conn == null) return 0;
+        String sql = "SELECT COUNT(*) AS total FROM users";
+        try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
     
     public User getUserById(int idUser) {
         if (conn == null) return null;

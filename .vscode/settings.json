@@ -10,6 +10,7 @@
         "lib/pdfbox-app-3.0.5.jar",
         "lib/flatlaf-3.6.jar",
         "lib/flatlaf-extras-3.6.jar",
-        "lib/jsvg-0.0.6.jar"
+        "lib/jsvg-0.0.6.jar",
+        "lib/jfreechart-1.5.6.jar"
     ]
 }
