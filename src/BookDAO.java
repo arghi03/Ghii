@@ -3,6 +3,10 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+// Asumsi kelas Book dan Loan sudah ada di project Anda
+// public class Book { public Book(int a, String b, String c, String d, String e, float f){} public int getIdBook(){return 1;} public String getTitle(){return "Judul";} public String getAuthor(){return "Penulis";} public String getCoverImagePath(){return "";} public String getBookFilePath(){return "";} public float getRating(){return 4.5f;} }
+// public class Loan { public Loan(int a, int b, int c, String d, int e, LocalDateTime f, LocalDateTime g, LocalDateTime h, Object i, String j){} }
+
 public class BookDAO {
     private Connection conn;
 
@@ -18,7 +22,7 @@ public class BookDAO {
     public Connection getConnection() {
         return conn;
     }
- 
+
     public boolean softDeleteBook(int bookId) {
         if (conn == null) {
             System.err.println("Koneksi database null! Tidak bisa menghapus buku.");
@@ -35,7 +39,7 @@ public class BookDAO {
             return false;
         }
     }
- 
+
     public boolean addBook(Book book) {
         if (conn == null) return false;
         String sql = "INSERT INTO books (id_book, title, author, cover_image_path, book_file_path, rating, is_deleted) VALUES (?, ?, ?, ?, ?, ?, 0)";
@@ -54,29 +58,29 @@ public class BookDAO {
         }
     }
 
-public boolean updateBook(Book book) {
-    if (conn == null) {
-        System.err.println("Koneksi null, tidak bisa update buku.");
-        return false;
-    }
-    String sql = "UPDATE books SET title = ?, author = ?, rating = ?, cover_image_path = ?, book_file_path = ? WHERE id_book = ?";
-    
-    try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-        stmt.setString(1, book.getTitle());
-        stmt.setString(2, book.getAuthor());
-        stmt.setFloat(3, book.getRating());
-        stmt.setString(4, book.getCoverImagePath());
-        stmt.setString(5, book.getBookFilePath());
-        stmt.setInt(6, book.getIdBook()); // ID buku untuk WHERE clause
+    public boolean updateBook(Book book) {
+        if (conn == null) {
+            System.err.println("Koneksi null, tidak bisa update buku.");
+            return false;
+        }
+        String sql = "UPDATE books SET title = ?, author = ?, rating = ?, cover_image_path = ?, book_file_path = ? WHERE id_book = ?";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, book.getTitle());
+            stmt.setString(2, book.getAuthor());
+            stmt.setFloat(3, book.getRating());
+            stmt.setString(4, book.getCoverImagePath());
+            stmt.setString(5, book.getBookFilePath());
+            stmt.setInt(6, book.getIdBook()); // ID buku untuk WHERE clause
 
-        int affectedRows = stmt.executeUpdate();
-        return affectedRows > 0;
-    } catch (SQLException e) {
-        System.err.println("Error saat update buku: " + e.getMessage());
-        e.printStackTrace();
-        return false;
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("Error saat update buku: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
     }
-}
 
     public int getNewBookId() {
         if (conn == null) throw new IllegalStateException("Koneksi database tidak tersedia");
@@ -94,7 +98,7 @@ public boolean updateBook(Book book) {
             throw new RuntimeException("Gagal generate ID buku baru: " + e.getMessage());
         }
     }
- 
+
     public List<Book> getAllBooks() {
         List<Book> books = new ArrayList<>();
         String sql = "SELECT * FROM books WHERE is_deleted = 0"; 
@@ -107,7 +111,7 @@ public boolean updateBook(Book book) {
         }
         return books;
     }
- 
+
     public int getTotalBooksCount() {
         String sql = "SELECT COUNT(*) AS total FROM books WHERE is_deleted = 0";
         try (PreparedStatement stmt = conn.prepareStatement(sql); ResultSet rs = stmt.executeQuery()) {
@@ -119,14 +123,18 @@ public boolean updateBook(Book book) {
         }
         return 0;
     }
- 
+
+    // ✅✅✅ METHOD INI DIPERBAIKI AGAR CASE-INSENSITIVE ✅✅✅
     public List<Book> searchBooks(String keyword) {
         List<Book> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE (title LIKE ? OR author LIKE ?) AND is_deleted = 0";
+        // Menggunakan fungsi LOWER() dari SQL untuk membuat pencarian tidak peka huruf besar/kecil
+        String sql = "SELECT * FROM books WHERE (LOWER(title) LIKE ? OR LOWER(author) LIKE ?) AND is_deleted = 0";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
-            String searchTerm = "%" + keyword + "%";
+            // Mengubah keyword menjadi huruf kecil dan menambahkan wildcard '%'
+            String searchTerm = "%" + keyword.toLowerCase() + "%";
             stmt.setString(1, searchTerm);
             stmt.setString(2, searchTerm);
+            
             ResultSet rs = stmt.executeQuery();
             while (rs.next()) {
                 books.add(mapRowToBook(rs));
@@ -136,7 +144,7 @@ public boolean updateBook(Book book) {
         }
         return books;
     }
-     
+        
     public Book getBookById(int idBook) {
         if (conn == null) return null;
         String sql = "SELECT * FROM books WHERE id_book = ? AND is_deleted = 0";
@@ -151,7 +159,7 @@ public boolean updateBook(Book book) {
         }
         return null;
     }
- 
+
     public List<Loan> getLoanHistoryByUser(int idUser) {
         List<Loan> loans = new ArrayList<>();
         String sql = "SELECT l.id_loan, l.id_book, l.request_date, l.return_date, l.approved_date, l.status, l.approved_by, b.title " +
@@ -174,7 +182,7 @@ public boolean updateBook(Book book) {
                     requestDate,
                     approvedDate,
                     returnDate,
-                    null,
+                    null, // diasumsikan tidak ada kolom user di join ini
                     rs.getString("title")
                 );
                 loans.add(loan);
@@ -213,7 +221,7 @@ public boolean updateBook(Book book) {
         }
         return 0.0f;
     }
-     
+        
     private Book mapRowToBook(ResultSet rs) throws SQLException {
         return new Book(
             rs.getInt("id_book"),

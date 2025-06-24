@@ -11,18 +11,18 @@ import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 
 // Asumsi kelas-kelas lain (User, DAO, Screen, dll.) sudah ada di project Anda
-// public class UserDAO { public UserDAO(Connection c) {} public User getUserByNameAndEmail(String n, String e) { User u = new User(); u.nama = n; return u; } public User getUserById(int id) { return new User(); } }
+// public class UserDAO { public UserDAO(Connection c) {} public User getUserByNameAndEmail(String n, String e) { User u = new User(); u.nama = n; u.idRole = 1; return u; } public User getUserById(int id) { return new User(); } }
 // public class BookDAO { public BookDAO(Connection c) {} }
 // public class FavoriteDAO { public FavoriteDAO(Connection c) {} }
 // public class DBConnection { public static Connection getConnection() { return null; } }
-// public class User { private int idRole = 3; public String nama; public String getNama() {return nama;} public int getIdRole() { return idRole; } public int getIdUser() {return 0;} }
+// public class User { public int idRole = 1; public String nama; public String getNama() {return nama;} public int getIdRole() { return idRole; } public int getIdUser() {return 0;} }
 // public class Login extends JFrame { public Login() {} }
 // public class ProfileScreen extends JFrame { public ProfileScreen(User u) { System.out.println("Profile screen opened for " + u.getNama()); setSize(400,300); setLocationRelativeTo(null); setVisible(true); } }
 // public class LoanHistoryScreen extends JFrame { public LoanHistoryScreen(User u) {} }
 // public class BookListScreen extends JFrame { public BookListScreen(User u) {} }
 // public class MyFavoritesScreen extends JFrame { public MyFavoritesScreen(User u) {} }
 // public class UserManagementScreen extends JFrame { public UserManagementScreen(User u) {} }
-// public class SuggestionListScreen extends JFrame { public SuggestionListScreen(User u) {} }
+// public class SuggestionListScreen extends JFrame { public SuggestionListScreen(User u) {System.out.println("Suggestion list screen opened."); setSize(600,400); setLocationRelativeTo(null); setVisible(true);}}
 // public class AddBookScreen extends JFrame { public AddBookScreen(User u) {} }
 // public class LoanManagementScreen extends JFrame { public LoanManagementScreen(User u) {} }
 // public class BookManagementScreen extends JFrame { public BookManagementScreen(User u) {} }
@@ -171,16 +171,29 @@ public class Dashboard extends JFrame {
         return sidebarPanel;
     }
 
+    // ✅✅✅ METHOD INI DIPERBAIKI ✅✅✅
     private void addRoleSpecificButtons(JPanel sidebarPanel) {
         sidebarPanel.add(Box.createVerticalStrut(10));
         int role = user.getIdRole();
-        if (role == 1) { // Admin
+        
+        // Menu khusus Admin
+        if (role == 1) { 
             sidebarPanel.add(createSidebarButton("Manajemen User", createSVGIcon("icons/users.svg"), false, () -> new UserManagementScreen(user)));
-        } else if (role == 2) { // Supervisor
-             sidebarPanel.add(createSidebarButton("Tambah Buku", createSVGIcon("icons/add.svg"), false, () -> new AddBookScreen(user)));
-             sidebarPanel.add(Box.createVerticalStrut(10));
-             sidebarPanel.add(createSidebarButton("Kelola Peminjaman", createSVGIcon("icons/loan.svg"), false, () -> new LoanManagementScreen(user)));
-        } else { // User
+            sidebarPanel.add(Box.createVerticalStrut(10));
+            // Tombol yang hilang, ditambahkan kembali
+            sidebarPanel.add(createSidebarButton("Lihat Saran Buku", createSVGIcon("icons/suggestion-list.svg"), false, () -> new SuggestionListScreen(user)));
+        } 
+        // Menu khusus Supervisor
+        else if (role == 2) { 
+            sidebarPanel.add(createSidebarButton("Tambah Buku", createSVGIcon("icons/add.svg"), false, () -> new AddBookScreen(user)));
+            sidebarPanel.add(Box.createVerticalStrut(10));
+            sidebarPanel.add(createSidebarButton("Kelola Peminjaman", createSVGIcon("icons/loan.svg"), false, () -> new LoanManagementScreen(user)));
+            sidebarPanel.add(Box.createVerticalStrut(10));
+            // Tombol yang hilang, ditambahkan kembali
+            sidebarPanel.add(createSidebarButton("Lihat Saran Buku", createSVGIcon("icons/suggestion-list.svg"), false, () -> new SuggestionListScreen(user)));
+        } 
+        // Menu khusus User
+        else { 
             sidebarPanel.add(createSidebarButton("Saran Buku", createSVGIcon("icons/suggestion.svg"), false, () -> new SuggestionDialog(this, this.user).setVisible(true)));
         }
     }
@@ -314,13 +327,13 @@ public class Dashboard extends JFrame {
         new BookListScreen(this.user);
     }
     
-    // ✅ DIPERBAIKI: Method ini sekarang bisa mengubah warna ikon
     private Icon createSVGIcon(String path, int width, int height) {
-        FlatSVGIcon icon = createSVGIcon(path);
-        if (icon == null) {
-             return new ImageIcon(new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB));
+        URL url = getClass().getClassLoader().getResource(path);
+        if (url == null) {
+            System.err.println("Gagal memuat ikon: " + path + " (File tidak ditemukan)");
+            return new ImageIcon(new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_ARGB));
         }
-        return icon.derive(width, height);
+        return new FlatSVGIcon(url).derive(width, height);
     }
     
     private FlatSVGIcon createSVGIcon(String path) {
@@ -331,13 +344,11 @@ public class Dashboard extends JFrame {
         }
         
         FlatSVGIcon icon = new FlatSVGIcon(url);
-        // ✅ Tambahkan filter untuk mengubah warna hitam menjadi abu-abu gelap
         icon.setColorFilter(new FlatSVGIcon.ColorFilter(color -> {
             if(color.equals(Color.black))
-                return new Color(80, 80, 80); // Warna abu-abu gelap
+                return new Color(80, 80, 80);
             return color;
         }));
-
         return icon;
     }
 }

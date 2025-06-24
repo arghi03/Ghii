@@ -1,13 +1,17 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.util.List;
-import java.util.Vector;
+
+// Asumsi kelas User dan UserDAO sudah ada di project Anda
+// public class User { public int idUser, idRole; public String nama, nim, email, nomorTelepon; public User(){} public String getNama(){return "Admin";} public int getIdUser(){return 1;} public String getNim(){return "123";} public String getEmail(){return "admin@mail.com";} public String getNomorTelepon(){return "08123";} public int getIdRole(){return 1;} public void setNama(String s){} public void setNim(String s){} public void setEmail(String s){} public void setNomorTelepon(String s){} }
+// public class UserDAO { public UserDAO(java.sql.Connection c){} public User getUserById(int id){return new User();} public boolean updateUser(User u){return true;} }
+// public class DBConnection { public static java.sql.Connection getConnection(){return null;} }
+
 
 public class ProfileScreen extends JFrame {
     private User currentUser;
     private UserDAO userDAO;
-    private RoleDAO roleDAO;
+    // private RoleDAO roleDAO; // Tidak lagi dibutuhkan
 
     private JLabel lblNameValue;
     private JTextField txtName, txtNim, txtEmail, txtPhone;
@@ -15,6 +19,7 @@ public class ProfileScreen extends JFrame {
     
     private boolean isEditMode = false;
 
+    // Palet Warna
     private Color primaryColor = new Color(30, 58, 138); 
     private Color successColor = new Color(76, 175, 80);  
     private Color secondaryColor = new Color(117, 117, 117); 
@@ -26,10 +31,10 @@ public class ProfileScreen extends JFrame {
     public ProfileScreen(User user) {
         this.currentUser = user;
         this.userDAO = new UserDAO(DBConnection.getConnection());
-        this.roleDAO = new RoleDAO(DBConnection.getConnection());
+        // this.roleDAO = new RoleDAO(DBConnection.getConnection()); // Tidak lagi dibutuhkan
 
         setTitle("Profil Pengguna - " + currentUser.getNama());
-        setSize(600, 700); 
+        setSize(600, 550); // Ukuran window bisa sedikit diperkecil
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -81,8 +86,7 @@ public class ProfileScreen extends JFrame {
         infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         infoPanel.add(createInfoPanel("ROLE", getRoleName(currentUser.getIdRole())));
 
-        JPanel adminPanel = createAdminPanel();
-        adminPanel.setVisible(currentUser.getIdRole() == 1); 
+        // ✅ Panel Admin dan logikanya dihapus dari sini
 
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         actionsPanel.setBackground(backgroundColor);
@@ -98,14 +102,7 @@ public class ProfileScreen extends JFrame {
         
         mainPanel.add(headerPanel, BorderLayout.NORTH);
         mainPanel.add(infoPanel, BorderLayout.CENTER);
-
-        JPanel bottomOuterPanel = new JPanel(new BorderLayout(0,15)); 
-        bottomOuterPanel.setBackground(backgroundColor);
-        if(currentUser.getIdRole() == 1) { 
-            bottomOuterPanel.add(adminPanel, BorderLayout.NORTH);
-        }
-        bottomOuterPanel.add(actionsPanel, BorderLayout.SOUTH);
-        mainPanel.add(bottomOuterPanel, BorderLayout.SOUTH);
+        mainPanel.add(actionsPanel, BorderLayout.SOUTH); // Langsung tambahkan actionsPanel
 
         add(mainPanel);
 
@@ -114,61 +111,7 @@ public class ProfileScreen extends JFrame {
         btnBack.addActionListener(e -> dispose());
     }
 
-    private JPanel createAdminPanel() {
-        JPanel adminPanel = createCardPanel();
-        adminPanel.setLayout(new BoxLayout(adminPanel, BoxLayout.Y_AXIS));
-
-        JLabel adminTitleLabel = new JLabel("Kelola Role Pengguna Lain");
-        adminTitleLabel.setFont(new Font("Arial", Font.BOLD, 14));
-        adminTitleLabel.setForeground(textColor);
-        adminTitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        List<User> allUsers = userDAO.getAllUsers();
-        List<Role> allRoles = roleDAO.getAllRoles();
-
-        Vector<User> userModel = new Vector<>();
-        for (User u : allUsers) {
-            if (u.getIdUser() != currentUser.getIdUser()) {
-                userModel.add(u);
-            }
-        }
-
-        JComboBox<User> userCombo = new JComboBox<>(userModel);
-        userCombo.setRenderer(new UserComboBoxRenderer());
-
-        JComboBox<Role> roleCombo = new JComboBox<>(new Vector<>(allRoles));
-
-        JButton btnChangeRole = createStyledButton("Ubah Role", primaryColor, 150, 35);
-        btnChangeRole.addActionListener(e -> {
-            User selectedUser = (User) userCombo.getSelectedItem();
-            Role selectedRole = (Role) roleCombo.getSelectedItem();
-
-            if (selectedUser == null || selectedRole == null) {
-                JOptionPane.showMessageDialog(this, "Pilih user dan role terlebih dahulu!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            selectedUser.setIdRole(selectedRole.getId());
-            boolean success = userDAO.updateUser(selectedUser);
-
-            if (success) {
-                JOptionPane.showMessageDialog(this, "Role untuk " + selectedUser.getNama() + " berhasil diubah.", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal mengubah role.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
-        adminPanel.add(adminTitleLabel);
-        adminPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        adminPanel.add(new JLabel("Pilih User:"));
-        adminPanel.add(userCombo);
-        adminPanel.add(Box.createRigidArea(new Dimension(0, 5)));
-        adminPanel.add(new JLabel("Pilih Role Baru:"));
-        adminPanel.add(roleCombo);
-        adminPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        adminPanel.add(btnChangeRole);
-        return adminPanel;
-    }
+    // ✅✅✅ METHOD createAdminPanel() DIHAPUS TOTAL ✅✅✅
 
     private void toggleEditMode(boolean isEditing) {
         this.isEditMode = isEditing;
@@ -322,34 +265,5 @@ public class ProfileScreen extends JFrame {
             }
         });
         return button;
-    }
-    
-    class UserComboBoxRenderer extends JLabel implements ListCellRenderer<User> {
-        public UserComboBoxRenderer() {
-            setOpaque(true);
-        }
-
-        @Override
-        public Component getListCellRendererComponent(JList<? extends User> list, 
-                                                      User user, 
-                                                      int index, 
-                                                      boolean isSelected, 
-                                                      boolean cellHasFocus) {
-            
-            if (user != null) {
-                setText(user.getNama() + " (ID: " + user.getIdUser() + ")");
-            } else {
-                setText("");
-            }
-
-            if (isSelected) {
-                setBackground(list.getSelectionBackground());
-                setForeground(list.getSelectionForeground());
-            } else {
-                setBackground(list.getBackground());
-                setForeground(list.getForeground());
-            }
-            return this;
-        }
     }
 }

@@ -4,6 +4,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
+// Asumsi kelas User sudah ada di project Anda
+// public class User { private int idUser,idRole; private String nama,nim,email,nomorTelepon,password,otpCode; private boolean isVerified,isActive; private LocalDateTime otpExpiry; public User(int a,String b,String c,String d,String e,String f,int g,boolean h,boolean i){} public int getIdUser(){return 1;} public String getNama(){return "User";} public String getNim(){return "123";} public String getEmail(){return "user@mail.com";} public String getNomorTelepon(){return "08123";} public String getPassword(){return "pass";} public int getIdRole(){return 1;} public boolean isVerified(){return true;} public boolean isActive(){return true;} public String getOtpCode(){return "1234";} public LocalDateTime getOtpExpiry(){return null;} public void setOtpCode(String c){} public void setOtpExpiry(LocalDateTime d){} public void setVerified(boolean b){} }
+
 public class UserDAO {
     private Connection conn;
     private static final DateTimeFormatter DB_DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -92,14 +95,34 @@ public class UserDAO {
             return false;
         }
     }
-     
+
+    public boolean updateUserRole(int userId, int newRoleId) {
+        if (conn == null) {
+            System.err.println("Tidak bisa update role, koneksi DB null.");
+            return false;
+        }
+
+        String sql = "UPDATE users SET id_role = ? WHERE id_user = ?";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, newRoleId);
+            stmt.setInt(2, userId);
+            
+            int affectedRows = stmt.executeUpdate();
+            return affectedRows > 0;
+        } catch (SQLException e) {
+            System.err.println("Gagal mengubah role untuk user ID " + userId + ": " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     public void saveOtp(User user, String otpCode) {
         if (user == null) {
             System.err.println("User tidak boleh null untuk menyimpan OTP.");
             return;
         }
-        LocalDateTime expiry = LocalDateTime.now().plusMinutes(10); // OTP berlaku 10 menit
+        LocalDateTime expiry = LocalDateTime.now().plusMinutes(10);
         user.setOtpCode(otpCode);
         user.setOtpExpiry(expiry);
         if (!updateUser(user)) { 
@@ -113,7 +136,7 @@ public class UserDAO {
         User user = getUserById(idUser);
         if (user != null) {
             user.setVerified(true);
-            return updateUser(user); // Gunakan updateUser yang sudah ada
+            return updateUser(user);
         }
         return false;
     }
@@ -121,7 +144,7 @@ public class UserDAO {
     public boolean rejectUser(int idUser) {
         try {
             conn.setAutoCommit(false);
- 
+
             String[] deleteQueries = {
                 "DELETE FROM book_suggestions WHERE id_user = ?",
                 "DELETE FROM favorites WHERE id_user = ?",
@@ -135,7 +158,6 @@ public class UserDAO {
                 }
             }
             
-            // Terakhir, hapus dari tabel users
             String sqlUser = "DELETE FROM users WHERE id_user = ?";
             try (PreparedStatement stmtUser = conn.prepareStatement(sqlUser)) {
                 stmtUser.setInt(1, idUser);
@@ -157,8 +179,7 @@ public class UserDAO {
             try { if(conn != null) conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
         }
     }
-     
-
+    
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
         if (conn == null) return users;
