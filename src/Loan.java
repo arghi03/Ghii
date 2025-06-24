@@ -11,7 +11,7 @@ public class Loan {
     private LocalDateTime returnDate;
     private String username;
     private String bookTitle;
-    private LocalDateTime expiryDate; // ✅ FIELD BARU DITAMBAHKAN
+    private LocalDateTime expiryDate; 
 
     public Loan(int idLoan, int idUser, int idBook, String status, int approvedBy) {
         this.idLoan = idLoan;
@@ -54,8 +54,7 @@ public class Loan {
     public void setUsername(String username) { this.username = username; }
     public String getBookTitle() { return bookTitle; }
     public void setBookTitle(String bookTitle) { this.bookTitle = bookTitle; }
-
-    // ✅ GETTER & SETTER BARU DITAMBAHKAN
+ 
     public LocalDateTime getExpiryDate() {
         return expiryDate;
     }

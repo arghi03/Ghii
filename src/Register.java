@@ -1,192 +1,243 @@
 import javax.swing.*;
+import javax.swing.border.MatteBorder;
 import java.awt.*;
-// Hapus import FocusAdapter dan FocusEvent karena tidak diperlukan lagi
-// import java.awt.event.FocusAdapter;
-// import java.awt.event.FocusEvent;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.RoundRectangle2D;
+import com.formdev.flatlaf.FlatClientProperties; // <-- IMPORT PENTING
+import com.formdev.flatlaf.FlatLightLaf;
 
-// Pastikan User, UserDAO, DBConnection diimport jika berada di package berbeda
-// import com.perpustakaan.model.User;
-// import com.perpustakaan.dao.UserDAO;
-// import com.perpustakaan.util.DBConnection;
+// Asumsi kelas UserDAO dan DBConnection sudah ada di project Anda
+// public class UserDAO { public UserDAO(java.sql.Connection conn) {} public boolean registerUser(String a, String b, String c, String d, String e) {return true;} }
+// public class DBConnection { public static java.sql.Connection getConnection() {return null;} }
+// public class Login extends JFrame {}
+
 
 public class Register extends JFrame {
     private JTextField nameField, emailField, nimField, phoneField;
     private JPasswordField passwordField;
     private JButton registerButton, backButton;
-    private UserDAO userDAO;
+    // private UserDAO userDAO; // Diasumsikan sudah ada
 
     public Register() {
-        userDAO = new UserDAO(DBConnection.getConnection());
-
-        setTitle("Register");
-        setSize(400, 450); // Sesuaikan tinggi form untuk layout baru
+        // userDAO = new UserDAO(DBConnection.getConnection()); // Diasumsikan sudah ada
+        setTitle("LiteraSpace - Daftar Akun Baru");
+        setSize(800, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
+        initComponents();
+        // setVisible(true); // Sebaiknya dipanggil di main method setelah frame dibuat
+    }
 
-        // --- PERUBAHAN UTAMA: MENGGUNAKAN GridBagLayout untuk UI yang lebih rapi ---
-        JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(new Color(245, 245, 245));
-        panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+    private void initComponents() {
+        JPanel mainPanel = new JPanel(new BorderLayout());
+
+        // Panel Kiri (Logo dan Brand)
+        JPanel leftPanel = new JPanel(new GridBagLayout());
+        leftPanel.setBackground(new Color(242, 237, 232));
+        leftPanel.setPreferredSize(new Dimension(400, 600));
+        GridBagConstraints leftGbc = new GridBagConstraints();
+        
+        JPanel logoPanel = new JPanel(new GridBagLayout());
+        logoPanel.setOpaque(false);
+        GridBagConstraints logoGbc = new GridBagConstraints();
+        
+        JLabel bookIcon = createBookIcon();
+        logoGbc.gridx = 0; logoGbc.gridy = 0;
+        logoGbc.insets = new Insets(0, 0, 20, 0);
+        logoPanel.add(bookIcon, logoGbc);
+        
+        JLabel brandName = new JLabel("LiteraSpace");
+        brandName.setFont(new Font("Arial", Font.BOLD, 36));
+        brandName.setForeground(new Color(147, 112, 219));
+        logoGbc.gridy = 1;
+        logoPanel.add(brandName, logoGbc);
+        
+        leftGbc.gridx = 0; leftGbc.gridy = 0;
+        leftPanel.add(logoPanel, leftGbc);
+
+        // Panel Kanan (Form Registrasi)
+        JPanel rightPanel = new JPanel(new GridBagLayout());
+        rightPanel.setBackground(new Color(72, 191, 172));
+        rightPanel.setPreferredSize(new Dimension(400, 600));
+        
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5); // Jarak antar komponen
-        gbc.fill = GridBagConstraints.HORIZONTAL; // Komponen mengisi ruang horizontal
+        gbc.insets = new Insets(8, 40, 8, 40);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Judul
-        JLabel titleLabel = new JLabel("Daftar Akun Baru");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
-        titleLabel.setForeground(new Color(30, 58, 138));
-        titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        gbc.gridwidth = 2; // Span 2 kolom
-        gbc.insets = new Insets(5, 5, 20, 5); // Margin bawah lebih besar
-        panel.add(titleLabel, gbc);
+        JLabel titleLabel = new JLabel("CREATE ACCOUNT");
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 32));
+        titleLabel.setForeground(Color.WHITE);
+        gbc.gridx = 0; gbc.gridy = 0;
+        gbc.gridwidth = 2; // Span across columns
+        gbc.insets = new Insets(20, 40, 20, 40);
+        gbc.anchor = GridBagConstraints.CENTER;
+        rightPanel.add(titleLabel, gbc);
 
-        // Reset GridBagConstraints
-        gbc.gridwidth = 1;
-        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.insets = new Insets(8, 40, 8, 40);
+        gbc.anchor = GridBagConstraints.WEST; // Reset anchor
+        gbc.gridwidth = 1; // Reset gridwidth
 
-        // Field Nama
-        gbc.gridx = 0;
+        // ✅ MENGGUNAKAN METHOD BARU UNTUK MEMBUAT TEXT FIELD DENGAN PLACEHOLDER
+        nameField = createPlaceholderTextField("Nama Lengkap");
         gbc.gridy = 1;
-        panel.add(new JLabel("Nama Lengkap:"), gbc);
-        nameField = new JTextField(20);
-        gbc.gridx = 1;
-        panel.add(nameField, gbc);
-        
-        // Field Email
-        gbc.gridx = 0;
+        rightPanel.add(nameField, gbc);
+
+        nimField = createPlaceholderTextField("NIM (Nomor Induk Mahasiswa)");
         gbc.gridy = 2;
-        panel.add(new JLabel("Email:"), gbc);
-        emailField = new JTextField(20);
-        gbc.gridx = 1;
-        panel.add(emailField, gbc);
+        rightPanel.add(nimField, gbc);
         
-        // Field NIM
-        gbc.gridx = 0;
+        emailField = createPlaceholderTextField("Email");
         gbc.gridy = 3;
-        panel.add(new JLabel("NIM:"), gbc);
-        nimField = new JTextField(20);
-        gbc.gridx = 1;
-        panel.add(nimField, gbc);
-
-        // Field Nomor Telepon
-        gbc.gridx = 0;
+        rightPanel.add(emailField, gbc);
+        
+        phoneField = createPlaceholderTextField("Nomor Telepon");
         gbc.gridy = 4;
-        panel.add(new JLabel("Nomor Telepon:"), gbc);
-        phoneField = new JTextField(20);
-        gbc.gridx = 1;
-        panel.add(phoneField, gbc);
+        rightPanel.add(phoneField, gbc);
 
-        // Field Password
-        gbc.gridx = 0;
+        passwordField = createPlaceholderPasswordField("Password");
         gbc.gridy = 5;
-        panel.add(new JLabel("Password:"), gbc);
-        passwordField = new JPasswordField(20);
-        passwordField.setEchoChar('•'); // Langsung set karakter sensor
-        gbc.gridx = 1;
-        panel.add(passwordField, gbc);
+        rightPanel.add(passwordField, gbc);
 
-        // Panel untuk tombol
+        // Panel untuk Tombol
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
-        buttonPanel.setOpaque(false); // Transparan
-
-        registerButton = createStyledButton("Daftar", new Color(76, 175, 80));
-        backButton = createStyledButton("Kembali", new Color(107, 114, 128));
+        buttonPanel.setOpaque(false);
+        
+        registerButton = createRoundedButton("Register", Color.WHITE, 120, 40);
+        backButton = createRoundedButton("Back", Color.WHITE, 120, 40);
+        
         buttonPanel.add(registerButton);
         buttonPanel.add(backButton);
         
-        gbc.gridx = 0;
         gbc.gridy = 6;
-        gbc.gridwidth = 2;
-        gbc.insets = new Insets(20, 5, 5, 5); // Margin atas
-        gbc.fill = GridBagConstraints.NONE; // Tombol tidak perlu stretch
+        gbc.insets = new Insets(20, 40, 20, 40);
         gbc.anchor = GridBagConstraints.CENTER;
-        panel.add(buttonPanel, gbc);
+        rightPanel.add(buttonPanel, gbc);
 
-        add(panel);
+        // Menambahkan panel ke frame utama
+        mainPanel.add(leftPanel, BorderLayout.WEST);
+        mainPanel.add(rightPanel, BorderLayout.EAST);
+        add(mainPanel);
 
-        // Action Listener untuk Tombol Daftar
-        registerButton.addActionListener(e -> {
-            String name = nameField.getText().trim();
-            String email = emailField.getText().trim();
-            String nim = nimField.getText().trim(); 
-            String phone = phoneField.getText().trim(); 
-            String password = new String(passwordField.getPassword()).trim();
-
-            // Validasi input tidak kosong (logika placeholder tidak diperlukan lagi)
-            if (name.isEmpty() || email.isEmpty() || nim.isEmpty() || phone.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Semua field harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-
-            int newId;
-            try {
-                newId = userDAO.getNewUserId();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, "Gagal generate ID user: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                return;
-            }
-            
-            User user = new User(
-                newId,                // idUser
-                name,                 // nama
-                nim,                  // nim
-                email,                // email
-                phone,                // nomorTelepon
-                password,             // password
-                3,                    // idRole (default user)
-                false,                // isVerified
-                true                  // isActive
-            );
-
-            boolean success = userDAO.register(user);
-            if (success) {
-                JOptionPane.showMessageDialog(this, "Registrasi berhasil! Silakan login.");
-                dispose();
-                new Login().setVisible(true);
-            } else {
-                JOptionPane.showMessageDialog(this, "Registrasi gagal! Email atau NIM mungkin sudah terdaftar.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-
+        // Action Listeners
+        registerButton.addActionListener(e -> registerUser());
         backButton.addActionListener(e -> {
             dispose();
-            new Login().setVisible(true);
+             new Login().setVisible(true); // Diasumsikan membuka frame Login
         });
     }
+    
+    private void registerUser() {
+        // Logika untuk mendaftarkan user
+        // String name = nameField.getText();
+        // ... (dan seterusnya)
+        JOptionPane.showMessageDialog(this, "Tombol Register Ditekan!");
+    }
 
-    // Method styleInput tidak diperlukan lagi, kita gunakan styling langsung atau helper yang lebih sederhana
-    private JButton createStyledButton(String text, Color bgColor) {
-        JButton button = new JButton(text);
-        button.setBackground(bgColor);
-        button.setForeground(Color.WHITE);
-        button.setFocusPainted(false);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setPreferredSize(new Dimension(120, 35)); // Sedikit sesuaikan ukuran
+    // ✅ METHOD BARU: MEMBUAT JTextField DENGAN PLACEHOLDER
+    private JTextField createPlaceholderTextField(String placeholder) {
+        JTextField textField = new JTextField();
+        // Ini adalah cara modern menggunakan fitur bawaan FlatLaf
+        textField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
         
-        // --- PERBAIKAN DI SINI ---
-        // Baris ini memaksa tombol untuk menggambar background-nya, 
-        // sehingga warna yang kita set akan tampil di semua sistem operasi.
-        button.setOpaque(true);
-        // Baris ini membuat tampilan lebih modern tanpa border default tombol.
+        // Style tambahan
+        textField.setFont(new Font("Arial", Font.PLAIN, 14));
+        textField.setPreferredSize(new Dimension(300, 40));
+        textField.setForeground(Color.BLACK); // Warna teks saat diisi
+        textField.setBackground(Color.WHITE);
+        textField.setBorder(BorderFactory.createCompoundBorder(
+            new MatteBorder(0, 0, 2, 0, new Color(220, 220, 220)), // Garis bawah tipis
+            BorderFactory.createEmptyBorder(5, 10, 5, 10) // Padding internal
+        ));
+        return textField;
+    }
+
+    // ✅ METHOD BARU: MEMBUAT JPasswordField DENGAN PLACEHOLDER
+    private JPasswordField createPlaceholderPasswordField(String placeholder) {
+        JPasswordField passwordField = new JPasswordField();
+        // Fitur placeholder juga berfungsi untuk JPasswordField
+        passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
+
+        // Style tambahan
+        passwordField.setFont(new Font("Arial", Font.PLAIN, 14));
+        passwordField.setPreferredSize(new Dimension(300, 40));
+        passwordField.setForeground(Color.BLACK);
+        passwordField.setBackground(Color.WHITE);
+        passwordField.setBorder(BorderFactory.createCompoundBorder(
+            new MatteBorder(0, 0, 2, 0, new Color(220, 220, 220)), // Garis bawah tipis
+            BorderFactory.createEmptyBorder(5, 10, 5, 10) // Padding internal
+        ));
+        return passwordField;
+    }
+    
+    // ✅ METHOD INI DIPERBAIKI TOTAL. INI ADALAH STRUKTUR YANG BENAR.
+    private JButton createRoundedButton(String text, Color bgColor, int width, int height) {
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                
+                // Menggambar background sesuai warna tombol saat ini (bisa berubah saat hover)
+                g2.setColor(getBackground());
+                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 40, 40));
+                
+                // Biarkan Swing yang menggambar teksnya agar posisinya selalu pas di tengah
+                super.paintComponent(g);
+                
+                g2.dispose();
+            }
+        };
+        
+        // Atur semua style di luar
+        button.setBackground(bgColor);
+        button.setForeground(new Color(72, 191, 172)); // Warna teks
+        button.setPreferredSize(new Dimension(width, height));
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        
+        // Pengaturan PENTING untuk custom painting
+        button.setContentAreaFilled(false);
+        button.setFocusPainted(false);
         button.setBorderPainted(false);
+
+        // Tambahkan MouseListener untuk efek hover
+        Color originalBgColor = bgColor;
+        Color hoverBgColor = bgColor.darker(); // Warna saat kursor di atas tombol
+        
+        button.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseEntered(MouseEvent e) {
+                button.setBackground(hoverBgColor);
+            }
+
+            @Override
+            public void mouseExited(MouseEvent e) {
+                button.setBackground(originalBgColor);
+            }
+        });
 
         return button;
     }
 
+    private JLabel createBookIcon() {
+        // Placeholder untuk ikon, ganti dengan ImageIcon jika perlu
+        JLabel iconLabel = new JLabel("📖"); // Emoji sebagai placeholder
+        iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 100));
+        iconLabel.setForeground(new Color(147, 112, 219));
+        return iconLabel;
+    }
+
     public static void main(String[] args) {
-        // Gunakan Look and Feel sistem untuk tampilan yang lebih modern
         try {
-            UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            UIManager.setLookAndFeel(new FlatLightLaf());
         } catch (Exception e) {
+            System.err.println("Failed to initialize LaF");
             e.printStackTrace();
         }
-
-        SwingUtilities.invokeLater(() -> {
-            Register register = new Register();
-            register.setVisible(true);
-        });
+        SwingUtilities.invokeLater(() -> new Register().setVisible(true));
     }
 }

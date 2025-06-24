@@ -1,9 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
-import java.util.List;
-import java.awt.Desktop;
-import java.io.File;
-import java.io.IOException;
+import java.util.List; 
+import java.io.File; 
 
 public class BookListScreen extends JFrame {
     private BookDAO bookDAO;
@@ -23,8 +21,7 @@ public class BookListScreen extends JFrame {
         setLocationRelativeTo(null);
 
         initComponents(); 
-
-        // ✅ PERINTAH YANG HILANG, SEKARANG DITAMBAHKAN KEMBALI
+ 
         setVisible(true); 
     }
 

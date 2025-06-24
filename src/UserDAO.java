@@ -92,8 +92,7 @@ public class UserDAO {
             return false;
         }
     }
-    
-    // ✅ --- METHOD YANG HILANG, DITAMBAHKAN KEMBALI & DIPERBAIKI --- ✅
+     
 
     public void saveOtp(User user, String otpCode) {
         if (user == null) {
@@ -122,8 +121,7 @@ public class UserDAO {
     public boolean rejectUser(int idUser) {
         try {
             conn.setAutoCommit(false);
-
-            // Hapus dari tabel anak dulu untuk menghindari error foreign key
+ 
             String[] deleteQueries = {
                 "DELETE FROM book_suggestions WHERE id_user = ?",
                 "DELETE FROM favorites WHERE id_user = ?",
@@ -159,8 +157,7 @@ public class UserDAO {
             try { if(conn != null) conn.setAutoCommit(true); } catch (SQLException ex) { ex.printStackTrace(); }
         }
     }
-    
-    // --- METHOD LAIN YANG SUDAH ADA ---
+     
 
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();

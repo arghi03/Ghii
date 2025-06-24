@@ -197,8 +197,7 @@ public class BookManagementScreen extends JFrame {
         public Object getCellEditorValue() {
             return null; 
         }
-
-        // ✅ --- METHOD INI DI-UPDATE TOTAL --- ✅
+ 
         @Override
         public void actionPerformed(ActionEvent e) {
             fireEditingStopped(); 
@@ -206,13 +205,9 @@ public class BookManagementScreen extends JFrame {
             int bookId = (int) table.getModel().getValueAt(this.currentRow, 0);
             String command = e.getActionCommand();
 
-            if ("edit".equals(command)) {
-                // Buka JDialog EditBookScreen yang baru kita buat.
-                // Mengirim 'BookManagementScreen.this' sebagai 'owner' agar dialognya modal.
+            if ("edit".equals(command)) { 
                 new EditBookScreen(BookManagementScreen.this, bookId);
-                
-                // Setelah window edit ditutup, kode akan lanjut ke sini,
-                // lalu kita refresh tabel untuk menampilkan data terbaru.
+                 
                 loadAllBooks();
 
             } else if ("delete".equals(command)) {

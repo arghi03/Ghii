@@ -6,10 +6,8 @@ import javax.swing.table.TableCellEditor;
 import javax.swing.AbstractCellEditor;   
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.awt.event.ActionListener; 
+import java.time.format.DateTimeFormatter; 
 import java.util.List;
 
 public class LoanManagementScreen extends JFrame {

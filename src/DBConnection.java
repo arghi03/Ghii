@@ -5,8 +5,8 @@ import java.sql.SQLException;
 public class DBConnection {
     public static Connection getConnection() {
         String url = "jdbc:mysql://localhost:3306/register_perpustakaan?useSSL=false";
-        String user = "root"; // Ganti dengan username MySQL kamu
-        String password = ""; // Ganti dengan password MySQL kamu
+        String user = "root";  
+        String password = ""; 
         Connection conn = null;
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");

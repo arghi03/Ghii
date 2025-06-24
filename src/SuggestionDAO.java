@@ -34,8 +34,7 @@ public class SuggestionDAO {
             return false;
         }
     }
-    
-    // ✅ --- METHOD BARU DITAMBAHKAN DI SINI --- ✅
+     
 
     /**
      * Mengambil semua saran buku dari database, diurutkan dari yang terbaru.

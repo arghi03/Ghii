@@ -324,7 +324,6 @@ public class ProfileScreen extends JFrame {
         return button;
     }
     
-    // ✅ Renderer kustom untuk JComboBox User yang sekarang sudah lengkap
     class UserComboBoxRenderer extends JLabel implements ListCellRenderer<User> {
         public UserComboBoxRenderer() {
             setOpaque(true);

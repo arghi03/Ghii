@@ -7,6 +7,9 @@
         "lib\\activation-1.1.1.jar",
         "c:\\Users\\Arghi Vianuri\\Desktop\\Tugas Kuliah\\Pemrograman Lanjut\\Perpus\\lib\\mysql-connector-j-9.3.0.jar",
         "c:\\Users\\Arghi Vianuri\\Desktop\\Tugas Kuliah\\Pemrograman Lanjut\\Perpus\\lib\\javax.mail-1.6.2.jar",
-        "lib/pdfbox-app-3.0.5.jar"
+        "lib/pdfbox-app-3.0.5.jar",
+        "lib/flatlaf-3.6.jar",
+        "lib/flatlaf-extras-3.6.jar",
+        "lib/jsvg-0.0.6.jar"
     ]
 }

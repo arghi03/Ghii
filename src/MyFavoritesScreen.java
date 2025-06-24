@@ -1,9 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
-import java.io.File; 
-import java.awt.Desktop; 
-import java.io.IOException; 
+import java.io.File;  
 
 
 public class MyFavoritesScreen extends JFrame {
@@ -72,7 +70,6 @@ public class MyFavoritesScreen extends JFrame {
         add(mainPanel);
     }
 
-    // ✅ Logika dirombak total jadi lebih simpel dan aman
     private void loadFavoriteBooks() {
         // 1. Hapus semua komponen yang ada di listPanel
         listPanel.removeAll();
@@ -112,10 +109,7 @@ public class MyFavoritesScreen extends JFrame {
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
         
-        // ✅ HAPUS BARIS INI -> Penyebab masalah "gepeng"
-        // bookEntryPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, bookEntryPanel.getPreferredSize().height + 10));
-
-
+        
         JLabel coverLabel = new JLabel();
         coverLabel.setPreferredSize(new Dimension(50, 70));
         coverLabel.setHorizontalAlignment(SwingConstants.CENTER);
