@@ -17,6 +17,6 @@ public class Role {
 
     @Override
     public String toString() {
-        return name; // Ini penting agar nama role tampil di JComboBox
+        return name;  
     }
 }

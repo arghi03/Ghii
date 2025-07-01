@@ -10,28 +10,6 @@ import java.sql.SQLException;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 
-// Asumsi kelas-kelas lain sudah ada di project Anda
-// public class UserDAO { public UserDAO(Connection c) {} public User getUserByNameAndEmail(String n, String e) { User u = new User(); u.nama = n; u.idRole = 1; return u; } public User getUserById(int id) { return new User(); } }
-// public class BookDAO { public BookDAO(Connection c) {} }
-// public class FavoriteDAO { public FavoriteDAO(Connection c) {} }
-// public class LoanDAO { public LoanDAO(Connection c) {} public Book getLastReadBook(int userId) { return new Book(); } }
-// public class DBConnection { public static Connection getConnection() { return null; } }
-// public class User { public int idRole = 1; public String nama; public String getNama() {return nama;} public int getIdRole() { return idRole; } public int getIdUser() {return 0;} }
-// public class Login extends JFrame { public Login() {} }
-// public class ProfileScreen extends JFrame { public ProfileScreen(User u) {} }
-// public class LoanHistoryScreen extends JFrame { public LoanHistoryScreen(User u) {} }
-// public class BookListScreen extends JFrame { public BookListScreen(User u) {} }
-// public class MyFavoritesScreen extends JFrame { public MyFavoritesScreen(User u) {} }
-// public class UserManagementScreen extends JFrame { public UserManagementScreen(User u) {} }
-// public class SuggestionListScreen extends JFrame { public SuggestionListScreen(User u) {} }
-// public class AddBookScreen extends JFrame { public AddBookScreen(User u) {} }
-// public class LoanManagementScreen extends JFrame { public LoanManagementScreen(User u) {} }
-// public class BookManagementScreen extends JFrame { public BookManagementScreen(User u) {} }
-// public class SuggestionDialog extends JDialog { public SuggestionDialog(Frame f, User u) {} }
-// public class Book { public String getTitle(){return "Hacking Untuk Pemula";} public String getAuthor(){return "Dedik Kurniawan";} public String getCoverImagePath(){return "path/to/cover.jpg";} public String getBookFilePath(){return "path/to/book.pdf";} }
-// public class StatisticsScreen extends JFrame { public StatisticsScreen(User u) {} }
-// public class PdfReaderScreen extends JFrame { public PdfReaderScreen(String path) { System.out.println("PDF Reader opened for: " + path); setSize(800, 600); setLocationRelativeTo(null); setVisible(true); } }
-
 
 public class Dashboard extends JFrame {
     private UserDAO userDAO;
@@ -80,8 +58,7 @@ public class Dashboard extends JFrame {
         add(mainContainer);
     }
 
-    private JPanel createHeaderPanel() {
-        // ... (Tidak ada perubahan di sini)
+    private JPanel createHeaderPanel() { 
         JPanel headerPanel = new JPanel(new BorderLayout(20, 0));
         headerPanel.setBackground(Color.WHITE);
         headerPanel.setBorder(BorderFactory.createEmptyBorder(15, 25, 15, 25));
@@ -102,8 +79,7 @@ public class Dashboard extends JFrame {
         return headerPanel;
     }
 
-    private JPanel createSearchPanel() {
-        // ... (Tidak ada perubahan di sini)
+    private JPanel createSearchPanel() { 
         JPanel searchPanel = new JPanel(new GridBagLayout());
         searchPanel.setOpaque(false);
         
@@ -132,8 +108,7 @@ public class Dashboard extends JFrame {
         return searchPanel;
     }
 
-    private JPanel createAccountPanel() {
-        // ... (Tidak ada perubahan di sini)
+    private JPanel createAccountPanel() { 
         JPanel accountPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         accountPanel.setOpaque(false);
         accountPanel.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -151,8 +126,7 @@ public class Dashboard extends JFrame {
         return accountPanel;
     }
 
-    private JPanel createSidebarPanel() {
-        // ... (Tidak ada perubahan di sini)
+    private JPanel createSidebarPanel() { 
         JPanel sidebarPanel = new JPanel();
         sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
         sidebarPanel.setBackground(new Color(242, 237, 232));
@@ -182,8 +156,7 @@ public class Dashboard extends JFrame {
         return sidebarPanel;
     }
     
-    private void addRoleSpecificButtons(JPanel sidebarPanel) {
-        // ... (Tidak ada perubahan di sini)
+    private void addRoleSpecificButtons(JPanel sidebarPanel) { 
         sidebarPanel.add(Box.createVerticalStrut(10));
         int role = user.getIdRole();
         
@@ -208,8 +181,7 @@ public class Dashboard extends JFrame {
         }
     }
 
-    private JButton createSidebarButton(String text, Icon icon, boolean isActive, Runnable action) {
-        // ... (Tidak ada perubahan di sini)
+    private JButton createSidebarButton(String text, Icon icon, boolean isActive, Runnable action) { 
         JButton button = new JButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -254,8 +226,7 @@ public class Dashboard extends JFrame {
         return button;
     }
 
-    private JPanel createMainContentPanel() {
-        // ... (Tidak ada perubahan di sini)
+    private JPanel createMainContentPanel() { 
         JPanel panel = new JPanel(new BorderLayout(0, 20));
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -264,8 +235,7 @@ public class Dashboard extends JFrame {
         return panel;
     }
     
-    private JPanel createWelcomeSection() {
-        // ... (Tidak ada perubahan di sini)
+    private JPanel createWelcomeSection() { 
         JPanel welcomePanel = new JPanel(new BorderLayout()) {
             @Override
             protected void paintComponent(Graphics g) {
@@ -302,16 +272,14 @@ public class Dashboard extends JFrame {
         return welcomePanel;
     }
 
-    private JPanel createBottomSection() {
-        // ... (Tidak ada perubahan di sini)
+    private JPanel createBottomSection() { 
         JPanel panel = new JPanel(new GridLayout(1, 1, 20, 0)); 
         panel.setOpaque(false);
         panel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
         panel.add(createLastBookPanel());
         return panel;
     }
-
-    // ✅✅✅ METHOD INI DIPERBAIKI LAYOUTNYA ✅✅✅
+ 
     private JPanel createLastBookPanel() {
         JPanel wrapperPanel = new JPanel(new BorderLayout());
         wrapperPanel.setBackground(Color.WHITE);

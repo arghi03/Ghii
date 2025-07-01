@@ -3,10 +3,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
-// Asumsi kelas User sudah ada di project Anda
-// public class User { private int idUser,idRole; private String nama,nim,email,nomorTelepon,password,otpCode; private boolean isVerified,isActive; private LocalDateTime otpExpiry; public User(int a,String b,String c,String d,String e,String f,int g,boolean h,boolean i){} public int getIdUser(){return 1;} public String getNama(){return "User";} public String getNim(){return "123";} public String getEmail(){return "user@mail.com";} public String getNomorTelepon(){return "08123";} public String getPassword(){return "pass";} public int getIdRole(){return 1;} public boolean isVerified(){return true;} public boolean isActive(){return true;} public String getOtpCode(){return "1234";} public LocalDateTime getOtpExpiry(){return null;} public void setOtpCode(String c){} public void setOtpExpiry(LocalDateTime d){} public void setVerified(boolean b){} }
-
+ 
 public class UserDAO {
     private Connection conn;
     private static final DateTimeFormatter DB_DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -191,8 +188,7 @@ public class UserDAO {
         } catch (SQLException e) { e.printStackTrace(); }
         return users;
     }
-
-    // ✅✅✅ METHOD BARU UNTUK STATISTIK ✅✅✅
+ 
     public int getTotalUsers() {
         if (conn == null) return 0;
         String sql = "SELECT COUNT(*) AS total FROM users";

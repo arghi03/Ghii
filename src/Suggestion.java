@@ -3,7 +3,7 @@ import java.time.LocalDateTime;
 public class Suggestion {
     private int id;
     private int userId;
-    private String username; // Untuk menampilkan nama user di daftar saran nanti
+    private String username;  
     private String title;
     private String author;
     private String notes;

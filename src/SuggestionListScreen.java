@@ -21,7 +21,7 @@ public class SuggestionListScreen extends JFrame {
 
     // Palet Warna
     private Color primaryColor = new Color(30, 58, 138); 
-    private Color viewColor = new Color(23, 162, 184); // Teal untuk tombol "Lihat"
+    private Color viewColor = new Color(23, 162, 184);  
     private Color dangerColor = new Color(220, 53, 69);
     private Color headerColor = new Color(224, 231, 255); 
     private Color backgroundColor = new Color(240, 242, 245);
@@ -57,7 +57,7 @@ public class SuggestionListScreen extends JFrame {
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 6; // Kolom Aksi bisa diklik
+                return column == 6;  
             }
         };
         suggestionTable = new JTable(tableModel);
@@ -194,7 +194,7 @@ public class SuggestionListScreen extends JFrame {
             if ("view".equals(command)) {
                 boolean success = suggestionDAO.updateSuggestionStatus(suggestionId, "viewed");
                 if(success) {
-                    loadSuggestions(); // Langsung refresh tabel
+                    loadSuggestions();  
                 } else {
                     JOptionPane.showMessageDialog(table, "Gagal mengubah status saran.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
@@ -204,7 +204,7 @@ public class SuggestionListScreen extends JFrame {
                 if (confirm == JOptionPane.YES_OPTION) {
                     boolean success = suggestionDAO.deleteSuggestion(suggestionId);
                     if (success) {
-                        loadSuggestions(); // Langsung refresh tabel
+                        loadSuggestions(); 
                     } else {
                         JOptionPane.showMessageDialog(table, "Gagal menghapus saran.", "Error", JOptionPane.ERROR_MESSAGE);
                     }

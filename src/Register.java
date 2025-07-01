@@ -4,30 +4,23 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
-import com.formdev.flatlaf.FlatClientProperties; // <-- IMPORT PENTING
+import com.formdev.flatlaf.FlatClientProperties;  
 import com.formdev.flatlaf.FlatLightLaf;
-
-// Asumsi kelas UserDAO dan DBConnection sudah ada di project Anda
-// public class UserDAO { public UserDAO(java.sql.Connection conn) {} public boolean registerUser(String a, String b, String c, String d, String e) {return true;} }
-// public class DBConnection { public static java.sql.Connection getConnection() {return null;} }
-// public class Login extends JFrame {}
+ 
 
 
 public class Register extends JFrame {
     private JTextField nameField, emailField, nimField, phoneField;
     private JPasswordField passwordField;
-    private JButton registerButton, backButton;
-    // private UserDAO userDAO; // Diasumsikan sudah ada
+    private JButton registerButton, backButton; 
 
-    public Register() {
-        // userDAO = new UserDAO(DBConnection.getConnection()); // Diasumsikan sudah ada
+    public Register() { 
         setTitle("LiteraSpace - Daftar Akun Baru");
         setSize(800, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
-        initComponents();
-        // setVisible(true); // Sebaiknya dipanggil di main method setelah frame dibuat
+        initComponents(); 
     }
 
     private void initComponents() {
@@ -78,8 +71,7 @@ public class Register extends JFrame {
         gbc.insets = new Insets(8, 40, 8, 40);
         gbc.anchor = GridBagConstraints.WEST; // Reset anchor
         gbc.gridwidth = 1; // Reset gridwidth
-
-        // ✅ MENGGUNAKAN METHOD BARU UNTUK MEMBUAT TEXT FIELD DENGAN PLACEHOLDER
+ 
         nameField = createPlaceholderTextField("Nama Lengkap");
         gbc.gridy = 1;
         rightPanel.add(nameField, gbc);
@@ -124,21 +116,16 @@ public class Register extends JFrame {
         registerButton.addActionListener(e -> registerUser());
         backButton.addActionListener(e -> {
             dispose();
-             new Login().setVisible(true); // Diasumsikan membuka frame Login
+             new Login().setVisible(true);  
         });
     }
     
-    private void registerUser() {
-        // Logika untuk mendaftarkan user
-        // String name = nameField.getText();
-        // ... (dan seterusnya)
+    private void registerUser() { 
         JOptionPane.showMessageDialog(this, "Tombol Register Ditekan!");
     }
-
-    // ✅ METHOD BARU: MEMBUAT JTextField DENGAN PLACEHOLDER
+ 
     private JTextField createPlaceholderTextField(String placeholder) {
-        JTextField textField = new JTextField();
-        // Ini adalah cara modern menggunakan fitur bawaan FlatLaf
+        JTextField textField = new JTextField(); 
         textField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
         
         // Style tambahan
@@ -152,11 +139,9 @@ public class Register extends JFrame {
         ));
         return textField;
     }
-
-    // ✅ METHOD BARU: MEMBUAT JPasswordField DENGAN PLACEHOLDER
+ 
     private JPasswordField createPlaceholderPasswordField(String placeholder) {
-        JPasswordField passwordField = new JPasswordField();
-        // Fitur placeholder juga berfungsi untuk JPasswordField
+        JPasswordField passwordField = new JPasswordField(); 
         passwordField.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, placeholder);
 
         // Style tambahan
@@ -170,41 +155,35 @@ public class Register extends JFrame {
         ));
         return passwordField;
     }
-    
-    // ✅ METHOD INI DIPERBAIKI TOTAL. INI ADALAH STRUKTUR YANG BENAR.
+     
     private JButton createRoundedButton(String text, Color bgColor, int width, int height) {
         JButton button = new JButton(text) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                
-                // Menggambar background sesuai warna tombol saat ini (bisa berubah saat hover)
+                 
                 g2.setColor(getBackground());
                 g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 40, 40));
-                
-                // Biarkan Swing yang menggambar teksnya agar posisinya selalu pas di tengah
+                 
                 super.paintComponent(g);
                 
                 g2.dispose();
             }
         };
-        
-        // Atur semua style di luar
+         
         button.setBackground(bgColor);
         button.setForeground(new Color(72, 191, 172)); // Warna teks
         button.setPreferredSize(new Dimension(width, height));
         button.setFont(new Font("Arial", Font.BOLD, 14));
         button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-        
-        // Pengaturan PENTING untuk custom painting
+         
         button.setContentAreaFilled(false);
         button.setFocusPainted(false);
         button.setBorderPainted(false);
-
-        // Tambahkan MouseListener untuk efek hover
+ 
         Color originalBgColor = bgColor;
-        Color hoverBgColor = bgColor.darker(); // Warna saat kursor di atas tombol
+        Color hoverBgColor = bgColor.darker();  
         
         button.addMouseListener(new MouseAdapter() {
             @Override
@@ -221,9 +200,8 @@ public class Register extends JFrame {
         return button;
     }
 
-    private JLabel createBookIcon() {
-        // Placeholder untuk ikon, ganti dengan ImageIcon jika perlu
-        JLabel iconLabel = new JLabel("📖"); // Emoji sebagai placeholder
+    private JLabel createBookIcon() { 
+        JLabel iconLabel = new JLabel("📖");  
         iconLabel.setFont(new Font("Segoe UI Emoji", Font.PLAIN, 100));
         iconLabel.setForeground(new Color(147, 112, 219));
         return iconLabel;

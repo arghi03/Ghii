@@ -8,7 +8,7 @@ public class SuggestionDialog extends JDialog {
     private JTextArea notesArea;
 
     public SuggestionDialog(Frame owner, User user) {
-        super(owner, "Sarankan Buku Baru", true); // true = modal
+        super(owner, "Sarankan Buku Baru", true); 
         this.currentUser = user;
 
         setSize(450, 350);

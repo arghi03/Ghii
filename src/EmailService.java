@@ -18,7 +18,7 @@ public class EmailService {
         props.put("mail.smtp.starttls.enable", "true");
         props.put("mail.smtp.host", "smtp.gmail.com");
         props.put("mail.smtp.port", "587");
-        props.put("mail.debug", "true"); // Tambah debug buat lihat log SMTP
+        props.put("mail.debug", "true"); // Tambah debug buat liat log SMTP
 
         // Buat session email
         Session session = Session.getInstance(props, new Authenticator() {

@@ -3,25 +3,19 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
-import com.formdev.flatlaf.FlatClientProperties; // <-- IMPORT PENTING
+import com.formdev.flatlaf.FlatClientProperties;  
 import com.formdev.flatlaf.FlatLightLaf;
-
-// Asumsi kelas UserDAO, User, DBConnection, Dashboard, dan Register sudah ada di project Anda
-// public class UserDAO { public UserDAO(java.sql.Connection conn) {} public User login(String u, String p) { User u_ = new User(); return u.equals("Erizz") ? u_ : null; } }
-// public class User { public String getNama() {return "Erizz";} public String getEmail() {return "erizz@mail.com";} public int getIdRole() {return 1;} public boolean isVerified() {return true;} }
-// public class DBConnection { public static java.sql.Connection getConnection() {return null;} }
-// public class Dashboard extends JFrame { public Dashboard(String n, String e, int r) {} }
-// public class Register extends JFrame {}
+ 
 
 
 public class Login extends JFrame {
     private JTextField nameField;
     private JPasswordField passwordField;
     private JButton loginButton, registerButton;
-    private UserDAO userDAO; // ✅ Diaktifkan kembali
+    private UserDAO userDAO;  
 
     public Login() {
-        userDAO = new UserDAO(DBConnection.getConnection()); // ✅ Diaktifkan kembali
+        userDAO = new UserDAO(DBConnection.getConnection());  
 
         setTitle("LiteraSpace - Login");
         setSize(800, 500);
@@ -31,11 +25,9 @@ public class Login extends JFrame {
         initComponents();
     }
 
-    private void initComponents() {
-        // Main panel dengan BorderLayout
+    private void initComponents() { 
         JPanel mainPanel = new JPanel(new BorderLayout());
-
-        // Panel Kiri (Form Login) - Warna Teal
+ 
         JPanel leftPanel = new JPanel(new GridBagLayout());
         leftPanel.setBackground(new Color(72, 191, 172));
         leftPanel.setPreferredSize(new Dimension(400, 500));
@@ -54,9 +46,7 @@ public class Login extends JFrame {
         leftPanel.add(loginTitle, gbc);
 
         gbc.insets = new Insets(10, 40, 10, 40);
-        gbc.anchor = GridBagConstraints.WEST; // Reset anchor
-
-        // Menggunakan method yang sama dari kelas Register
+        gbc.anchor = GridBagConstraints.WEST;  
         nameField = createPlaceholderTextField("Username atau Email");
         gbc.gridy = 1;
         leftPanel.add(nameField, gbc);
@@ -67,8 +57,7 @@ public class Login extends JFrame {
 
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20, 0));
         buttonPanel.setOpaque(false);
-        
-        // Menggunakan method createRoundedButton yang sudah diperbaiki
+         
         loginButton = createRoundedButton("Login", Color.WHITE, 120, 40);
         registerButton = createRoundedButton("Sign Up", Color.WHITE, 120, 40);
         
@@ -79,8 +68,7 @@ public class Login extends JFrame {
         gbc.insets = new Insets(30, 40, 60, 40);
         gbc.anchor = GridBagConstraints.CENTER;
         leftPanel.add(buttonPanel, gbc);
-
-        // Panel Kanan (Logo dan Branding)
+ 
         JPanel rightPanel = new JPanel(new GridBagLayout());
         rightPanel.setBackground(new Color(242, 237, 232));
         rightPanel.setPreferredSize(new Dimension(400, 500));
@@ -130,24 +118,22 @@ public class Login extends JFrame {
             JOptionPane.showMessageDialog(this, "Username/Email dan Password harus diisi!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
-
-        // ✅ LOGIKA LOGIN ASLI SEKARANG DIAKTIFKAN
+ 
         User user = userDAO.login(nameOrEmail, password);
         if (user != null) { 
             JOptionPane.showMessageDialog(this, "Login berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-            // Logika setelah login berhasil (misal: buka dashboard)
+            
              if (user.isVerified()) {
                   new Dashboard(user.getNama(), user.getEmail(), user.getIdRole()).setVisible(true);
              } else {
-                  // Logika OTP
+                   
              }
             dispose();  
         } else {
             JOptionPane.showMessageDialog(this, "Login gagal! Periksa kembali username/email dan password Anda.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-
-    // METHOD-METHOD DI BAWAH INI DIAMBIL DARI KELAS REGISTER UNTUK KONSISTENSI
+ 
     
     private JTextField createPlaceholderTextField(String placeholder) {
         JTextField textField = new JTextField();

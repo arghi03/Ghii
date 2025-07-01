@@ -103,14 +103,12 @@ public class FavoriteDAO {
         if (conn == null) {
             System.err.println("Koneksi null di getUserFavoriteBooks.");
             return favoriteBooks;
-        }
-        // Query untuk mengambil detail buku yang difavoritkan
-        // JOIN antara tabel favorites dan books
+        } 
         String sql = "SELECT b.id_book, b.title, b.author, b.cover_image_path, b.book_file_path, b.rating " +
                      "FROM favorites f " +
                      "JOIN books b ON f.id_book = b.id_book " +
                      "WHERE f.id_user = ? " +
-                     "ORDER BY f.favorited_at DESC"; // Urutkan berdasarkan kapan difavoritkan (terbaru dulu)
+                     "ORDER BY f.favorited_at DESC";  
 
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);

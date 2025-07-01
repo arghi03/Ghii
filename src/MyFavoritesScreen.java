@@ -70,16 +70,12 @@ public class MyFavoritesScreen extends JFrame {
         add(mainPanel);
     }
 
-    private void loadFavoriteBooks() {
-        // 1. Hapus semua komponen yang ada di listPanel
+    private void loadFavoriteBooks() { 
         listPanel.removeAll();
-
-        // 2. Ambil data buku favorit terbaru
+ 
         List<Book> favoriteBooks = favoriteDAO.getUserFavoriteBooks(currentUser.getIdUser());
-
-        // 3. Cek apakah daftar favoritnya kosong
-        if (favoriteBooks.isEmpty()) {
-            // Jika kosong, tampilkan label "belum ada favorit"
+ 
+        if (favoriteBooks.isEmpty()) { 
             JPanel emptyPanel = new JPanel(new GridBagLayout());
             emptyPanel.setOpaque(false);
             emptyFavoritesLabel = new JLabel("Anda belum memiliki buku favorit.");
@@ -87,16 +83,13 @@ public class MyFavoritesScreen extends JFrame {
             emptyFavoritesLabel.setForeground(neutralColor);
             emptyPanel.add(emptyFavoritesLabel);
             listPanel.add(emptyPanel);
-        } else {
-            // Jika ada isinya, loop dan tambahkan setiap buku ke panel
+        } else { 
             for (Book book : favoriteBooks) {
-                listPanel.add(createBookEntryPanel(book));
-                // Tambahkan separator antar buku
+                listPanel.add(createBookEntryPanel(book)); 
                 listPanel.add(Box.createRigidArea(new Dimension(0, 5)));
             }
         }
-
-        // 4. Perbarui UI
+ 
         listPanel.revalidate();
         listPanel.repaint();
     }
@@ -163,8 +156,7 @@ public class MyFavoritesScreen extends JFrame {
             int confirm = JOptionPane.showConfirmDialog(this, "Yakin ingin menghapus \"" + book.getTitle() + "\" dari favorit?", "Konfirmasi Hapus Favorit", JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 boolean success = favoriteDAO.removeFavorite(currentUser.getIdUser(), book.getIdBook());
-                if (success) {
-                    // Muat ulang daftar favorit untuk merefresh tampilan
+                if (success) { 
                     loadFavoriteBooks(); 
                 } else {
                     JOptionPane.showMessageDialog(this, "Gagal menghapus buku dari favorit.", "Error", JOptionPane.ERROR_MESSAGE);

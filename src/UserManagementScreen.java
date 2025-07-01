@@ -4,12 +4,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
-
-// Asumsi kelas-kelas lain sudah ada di project Anda
-// public class User { private int idUser, idRole; private String nama, email; private boolean isVerified, isActive; public User() {} public int getIdUser() {return 1;} public String getNama() {return "Admin";} public String getEmail(){return "admin@mail.com";} public int getIdRole(){return 1;} public boolean isVerified(){return true;} public boolean isActive(){return true;} public void setActive(boolean b){} }
-// public class UserDAO { public UserDAO(java.sql.Connection c){} public List<User> getAllUsers(){ java.util.List<User> list = new java.util.ArrayList<>(); for(int i=0; i<4; i++) list.add(new User()); return list;} public boolean approveUser(int id){return true;} public boolean rejectUser(int id){return true;} public boolean updateUser(User u){return true;} public boolean updateUserRole(int id, int roleId){return true;} }
-// public class DBConnection { public static java.sql.Connection getConnection(){return null;} }
-
+ 
 public class UserManagementScreen extends JFrame {
     private UserDAO userDAO;
     private User adminUser;
@@ -108,31 +103,26 @@ public class UserManagementScreen extends JFrame {
         userCardsPanel.repaint();
     }
 
-    // ✅✅✅ METHOD INI DIPERBAIKI LAYOUT-NYA ✅✅✅
     private JPanel createUserCard(User user) {
         JPanel card = new JPanel(new BorderLayout(20, 10));
         card.setBorder(BorderFactory.createCompoundBorder(
             BorderFactory.createLineBorder(borderColor, 1),
-            BorderFactory.createEmptyBorder(15, 20, 15, 20) // Padding diubah
+            BorderFactory.createEmptyBorder(15, 20, 15, 20)
         ));
         card.setBackground(cardBackgroundColor);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110)); // Ukuran disesuaikan
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 110));
         card.setMinimumSize(new Dimension(0, 110));
 
-        // Left section dengan avatar
         JPanel leftSection = new JPanel(new BorderLayout(15, 0));
         leftSection.setOpaque(false);
         
         JLabel avatarLabel = createAvatarLabel(user.getNama());
         leftSection.add(avatarLabel, BorderLayout.CENTER);
         
-        // --- Panel Tengah (Info + Status) ---
         JPanel middleSection = new JPanel();
         middleSection.setOpaque(false);
-        // Menggunakan BoxLayout Y_AXIS untuk menumpuk info dan status secara vertikal
         middleSection.setLayout(new BoxLayout(middleSection, BoxLayout.Y_AXIS));
 
-        // Panel Info (Nama & Email)
         JPanel infoPanel = new JPanel();
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         infoPanel.setOpaque(false);
@@ -149,7 +139,6 @@ public class UserManagementScreen extends JFrame {
         infoPanel.add(Box.createVerticalStrut(2));
         infoPanel.add(emailLabel);
         
-        // Panel Status (Badges)
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         statusPanel.setOpaque(false);
         statusPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -158,41 +147,57 @@ public class UserManagementScreen extends JFrame {
         statusPanel.add(createStatusBadge(user.isVerified() ? "Terverifikasi" : "Belum Diverifikasi", user.isVerified() ? successColor : warningColor));
         statusPanel.add(createStatusBadge(user.isActive() ? "Aktif" : "Nonaktif", user.isActive() ? successColor : dangerColor));
         
-        // Menambahkan info dan status ke wrapper vertikal
         middleSection.add(infoPanel);
-        middleSection.add(Box.createVerticalStrut(8)); // Jarak antara email dan badge
+        middleSection.add(Box.createVerticalStrut(8));
         middleSection.add(statusPanel);
         
-        // -- End of Panel Tengah --
-        
-        // Panel Aksi Kanan
         JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         actionPanel.setOpaque(false);
-        // ... (Logika Tombol tidak diubah)
-        boolean isSelf = (user.getIdUser() == adminUser.getIdUser());
-
-        JButton ubahRoleBtn = new JButton("Ubah Role");
-        styleActionButton(ubahRoleBtn, primaryColor);
-        ubahRoleBtn.setEnabled(!isSelf);
-        ubahRoleBtn.addActionListener(e -> showRoleChangeDialog(user));
-        actionPanel.add(ubahRoleBtn);
-
-        JButton toggleActiveBtn = new JButton(user.isActive() ? "Nonaktifkan" : "Aktifkan");
-        styleActionButton(toggleActiveBtn, user.isActive() ? dangerColor : successColor);
-        toggleActiveBtn.setEnabled(!isSelf);
-        toggleActiveBtn.addActionListener(e -> {
-            boolean newStatus = !user.isActive();
-            user.setActive(newStatus);
-            if (userDAO.updateUser(user)) {
-                JOptionPane.showMessageDialog(this, "Status akun " + user.getNama() + " berhasil diubah.");
-                loadAllUsers();
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal mengubah status akun.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
-        });
-        actionPanel.add(toggleActiveBtn);
         
-        // Menggabungkan semua bagian ke dalam kartu utama
+        boolean isSelf = (user.getIdUser() == adminUser.getIdUser());
+ 
+        if (!user.isVerified()) { 
+            JButton verifyButton = new JButton("Verifikasi");
+            styleActionButton(verifyButton, successColor);
+            verifyButton.addActionListener(e -> {
+                int confirm = JOptionPane.showConfirmDialog(this, 
+                    "Anda yakin ingin memverifikasi pengguna '" + user.getNama() + "'?",
+                    "Konfirmasi Verifikasi", 
+                    JOptionPane.YES_NO_OPTION);
+                
+                if (confirm == JOptionPane.YES_OPTION) {
+                    if (userDAO.approveUser(user.getIdUser())) {
+                        JOptionPane.showMessageDialog(this, "Pengguna berhasil diverifikasi.");
+                        loadAllUsers();  
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Gagal memverifikasi pengguna.", "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                }
+            });
+            actionPanel.add(verifyButton);
+        } else { 
+            JButton ubahRoleBtn = new JButton("Ubah Role");
+            styleActionButton(ubahRoleBtn, primaryColor);
+            ubahRoleBtn.setEnabled(!isSelf);
+            ubahRoleBtn.addActionListener(e -> showRoleChangeDialog(user));
+            actionPanel.add(ubahRoleBtn);
+
+            JButton toggleActiveBtn = new JButton(user.isActive() ? "Nonaktifkan" : "Aktifkan");
+            styleActionButton(toggleActiveBtn, user.isActive() ? dangerColor : successColor);
+            toggleActiveBtn.setEnabled(!isSelf);
+            toggleActiveBtn.addActionListener(e -> {
+                boolean newStatus = !user.isActive();
+                user.setActive(newStatus);
+                if (userDAO.updateUser(user)) {
+                    JOptionPane.showMessageDialog(this, "Status akun " + user.getNama() + " berhasil diubah.");
+                    loadAllUsers();
+                } else {
+                    JOptionPane.showMessageDialog(this, "Gagal mengubah status akun.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            });
+            actionPanel.add(toggleActiveBtn);
+        }
+        
         card.add(leftSection, BorderLayout.WEST);
         card.add(middleSection, BorderLayout.CENTER);
         card.add(actionPanel, BorderLayout.EAST);

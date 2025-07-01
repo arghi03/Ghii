@@ -116,8 +116,7 @@ public class BookListScreen extends JFrame {
         listPanel.revalidate();
         listPanel.repaint();
     }
-    
-    // ✅✅✅ METHOD INI DILENGKAPI KEMBALI ✅✅✅
+     
     private JPanel createBookEntryPanel(Book book) {
         Color primaryColor = new Color(30, 58, 138); 
         Color secondaryColor = new Color(107, 114, 128); // Abu-abu untuk favorit yg tidak aktif

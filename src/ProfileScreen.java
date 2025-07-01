@@ -1,17 +1,12 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
-
-// Asumsi kelas User dan UserDAO sudah ada di project Anda
-// public class User { public int idUser, idRole; public String nama, nim, email, nomorTelepon; public User(){} public String getNama(){return "Admin";} public int getIdUser(){return 1;} public String getNim(){return "123";} public String getEmail(){return "admin@mail.com";} public String getNomorTelepon(){return "08123";} public int getIdRole(){return 1;} public void setNama(String s){} public void setNim(String s){} public void setEmail(String s){} public void setNomorTelepon(String s){} }
-// public class UserDAO { public UserDAO(java.sql.Connection c){} public User getUserById(int id){return new User();} public boolean updateUser(User u){return true;} }
-// public class DBConnection { public static java.sql.Connection getConnection(){return null;} }
+ 
 
 
 public class ProfileScreen extends JFrame {
     private User currentUser;
-    private UserDAO userDAO;
-    // private RoleDAO roleDAO; // Tidak lagi dibutuhkan
+    private UserDAO userDAO; 
 
     private JLabel lblNameValue;
     private JTextField txtName, txtNim, txtEmail, txtPhone;
@@ -30,11 +25,10 @@ public class ProfileScreen extends JFrame {
 
     public ProfileScreen(User user) {
         this.currentUser = user;
-        this.userDAO = new UserDAO(DBConnection.getConnection());
-        // this.roleDAO = new RoleDAO(DBConnection.getConnection()); // Tidak lagi dibutuhkan
+        this.userDAO = new UserDAO(DBConnection.getConnection()); 
 
         setTitle("Profil Pengguna - " + currentUser.getNama());
-        setSize(600, 550); // Ukuran window bisa sedikit diperkecil
+        setSize(600, 550);  
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -85,8 +79,7 @@ public class ProfileScreen extends JFrame {
         infoPanel.add(createDetailEntry("NOMOR TELEPON", txtPhone));
         infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         infoPanel.add(createInfoPanel("ROLE", getRoleName(currentUser.getIdRole())));
-
-        // ✅ Panel Admin dan logikanya dihapus dari sini
+ 
 
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         actionsPanel.setBackground(backgroundColor);
@@ -102,7 +95,7 @@ public class ProfileScreen extends JFrame {
         
         mainPanel.add(headerPanel, BorderLayout.NORTH);
         mainPanel.add(infoPanel, BorderLayout.CENTER);
-        mainPanel.add(actionsPanel, BorderLayout.SOUTH); // Langsung tambahkan actionsPanel
+        mainPanel.add(actionsPanel, BorderLayout.SOUTH);  
 
         add(mainPanel);
 
@@ -110,8 +103,7 @@ public class ProfileScreen extends JFrame {
         btnSave.addActionListener(e -> saveUserProfile());
         btnBack.addActionListener(e -> dispose());
     }
-
-    // ✅✅✅ METHOD createAdminPanel() DIHAPUS TOTAL ✅✅✅
+ 
 
     private void toggleEditMode(boolean isEditing) {
         this.isEditMode = isEditing;

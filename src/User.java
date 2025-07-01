@@ -9,11 +9,10 @@ public class User {
     private String password;
     private int idRole;
     private boolean isVerified;
-    private boolean isActive; // FIELD BARU
+    private boolean isActive;  
     private String otpCode;
     private LocalDateTime otpExpiry;
-
-    // Konstruktor utama diperbarui dengan parameter isActive
+ 
     public User(int idUser, String nama, String nim, String email, String nomorTelepon, String password, int idRole, boolean isVerified, boolean isActive) {
         this.idUser = idUser;
         this.nama = nama;
@@ -23,7 +22,7 @@ public class User {
         this.password = password;
         this.idRole = idRole;
         this.isVerified = isVerified;
-        this.isActive = isActive; // Inisialisasi field baru
+        this.isActive = isActive; 
     }
 
     // Getter dan Setter

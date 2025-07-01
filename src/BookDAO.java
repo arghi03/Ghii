@@ -3,9 +3,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-// Asumsi kelas Book dan Loan sudah ada di project Anda
-// public class Book { public Book(int a, String b, String c, String d, String e, float f){} public int getIdBook(){return 1;} public String getTitle(){return "Judul";} public String getAuthor(){return "Penulis";} public String getCoverImagePath(){return "";} public String getBookFilePath(){return "";} public float getRating(){return 4.5f;} }
-// public class Loan { public Loan(int a, int b, int c, String d, int e, LocalDateTime f, LocalDateTime g, LocalDateTime h, Object i, String j){} }
+ 
 
 public class BookDAO {
     private Connection conn;
@@ -123,8 +121,7 @@ public class BookDAO {
         }
         return 0;
     }
-
-    // ✅✅✅ METHOD INI DIPERBAIKI AGAR CASE-INSENSITIVE ✅✅✅
+ 
     public List<Book> searchBooks(String keyword) {
         List<Book> books = new ArrayList<>();
         // Menggunakan fungsi LOWER() dari SQL untuk membuat pencarian tidak peka huruf besar/kecil
@@ -182,7 +179,7 @@ public class BookDAO {
                     requestDate,
                     approvedDate,
                     returnDate,
-                    null, // diasumsikan tidak ada kolom user di join ini
+                    null,  
                     rs.getString("title")
                 );
                 loans.add(loan);

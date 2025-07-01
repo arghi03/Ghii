@@ -2,9 +2,9 @@ public class Book {
     private int idBook;
     private String title;
     private String author;
-    private String coverImagePath; // Tambah field untuk path gambar sampul
-    private String bookFilePath;   // Tambah field untuk path file PDF
-    private float rating;          // Tambah field untuk rating
+    private String coverImagePath;  
+    private String bookFilePath;    
+    private float rating;           
 
     public Book(int idBook, String title, String author) {
         this.idBook = idBook;

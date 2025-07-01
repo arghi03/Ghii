@@ -1,5 +1,5 @@
 import java.sql.*;
-import java.time.LocalDate; // -> IMPORT BARU
+import java.time.LocalDate;  
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -7,9 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-// Asumsi kelas-kelas lain sudah ada
-// class Book { public Book(int a, String b, String c, String d, String e, float f){} }
-// class Loan { public Loan(int a, int b, int c, String d, int e, LocalDateTime f, LocalDateTime g, LocalDateTime h, String i, String j){} public void setUsername(String s){} public void setBookTitle(String s){} public void setRequestDate(LocalDateTime d){} public void setExpiryDate(LocalDateTime d){} }
+ 
 
 public class LoanDAO {
     private Connection conn;
@@ -21,8 +19,7 @@ public class LoanDAO {
             System.err.println("Koneksi database null saat inisialisasi LoanDAO!");
         }
     }
-
-    // ... (semua method lain dari expireUserLoans sampai addLoan tetap sama) ...
+ 
     public void expireUserLoans(int userId) {
         String sql = "UPDATE loans SET status = 'returned', return_date = expiry_date " +
                      "WHERE id_user = ? AND status = 'approved' AND expiry_date < NOW()";
@@ -231,7 +228,7 @@ public class LoanDAO {
     }
 
     /**
-     * ✅✅✅ METHOD FINAL BOSS UNTUK DIAGRAM GARIS ✅✅✅
+     *
      * Mengambil data jumlah peminjaman per hari selama rentang waktu tertentu.
      * @param days Jumlah hari ke belakang yang ingin ditarik datanya.
      * @return Map dengan key LocalDate (tanggal) dan value Integer (jumlah peminjaman).
@@ -239,9 +236,7 @@ public class LoanDAO {
     public Map<LocalDate, Integer> getDailyLoanCounts(int days) {
         Map<LocalDate, Integer> dailyCounts = new LinkedHashMap<>();
         if (conn == null) return dailyCounts;
-
-        // Query ini menghitung jumlah peminjaman per tanggal (DATE(request_date))
-        // untuk rentang waktu x hari ke belakang dari sekarang.
+ 
         String sql = "SELECT DATE(request_date) AS loan_date, COUNT(*) AS count " +
                      "FROM loans " +
                      "WHERE request_date >= CURDATE() - INTERVAL ? DAY " +
@@ -251,8 +246,7 @@ public class LoanDAO {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, days);
             ResultSet rs = stmt.executeQuery();
-            while (rs.next()) {
-                // Mengambil tanggal sebagai java.sql.Date, lalu konversi ke java.time.LocalDate
+            while (rs.next()) { 
                 LocalDate date = rs.getDate("loan_date").toLocalDate();
                 int count = rs.getInt("count");
                 dailyCounts.put(date, count);
