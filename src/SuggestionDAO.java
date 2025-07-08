@@ -18,7 +18,7 @@ public class SuggestionDAO {
             System.err.println("Koneksi null, tidak bisa menambah saran.");
             return false;
         }
-        String sql = "INSERT INTO book_suggestions (id_user, suggested_title, suggested_author, notes) VALUES (?, ?, ?, ?)";
+        String sql = "INSERT INTO book_suggestions (id_user, suggested_title, suggested_author, notes, status) VALUES (?, ?, ?, ?, 'pending')";
         
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, suggestion.getUserId());
@@ -35,14 +35,8 @@ public class SuggestionDAO {
         }
     }
      
-
-    /**
-     * Mengambil semua saran buku dari database, diurutkan dari yang terbaru.
-     * @return List dari objek Suggestion.
-     */
     public List<Suggestion> getAllSuggestions() {
         List<Suggestion> suggestions = new ArrayList<>();
-        // Query melakukan JOIN dengan tabel users untuk mendapatkan nama user
         String sql = "SELECT s.*, u.nama as username " +
                      "FROM book_suggestions s " +
                      "JOIN users u ON s.id_user = u.id_user " +
@@ -71,12 +65,46 @@ public class SuggestionDAO {
         return suggestions;
     }
 
+    // ✅✅✅ METHOD BARU UNTUK HALAMAN RIWAYAT SARAN USER ✅✅✅
     /**
-     * Mengupdate status dari sebuah saran (misal: dari 'pending' ke 'viewed').
-     * @param suggestionId ID dari saran yang akan diupdate.
-     * @param newStatus Status baru (harus salah satu dari ENUM: 'pending', 'viewed', 'rejected', 'added').
-     * @return true jika berhasil, false jika gagal.
+     * Mengambil semua saran buku dari SATU pengguna spesifik.
+     * @param userId ID dari pengguna yang sarannya ingin diambil.
+     * @return List dari objek Suggestion milik pengguna tersebut.
      */
+    public List<Suggestion> getSuggestionsByUser(int userId) {
+        List<Suggestion> suggestions = new ArrayList<>();
+        // Query sama seperti getAllSuggestions, tapi dengan tambahan WHERE clause
+        String sql = "SELECT s.*, u.nama as username " +
+                     "FROM book_suggestions s " +
+                     "JOIN users u ON s.id_user = u.id_user " +
+                     "WHERE s.id_user = ? " +
+                     "ORDER BY s.created_at DESC";
+        
+        try (PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, userId); // Set parameter user ID
+            
+            try(ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    Suggestion suggestion = new Suggestion(
+                        rs.getInt("id_suggestion"),
+                        rs.getInt("id_user"),
+                        rs.getString("username"),
+                        rs.getString("suggested_title"),
+                        rs.getString("suggested_author"),
+                        rs.getString("notes"),
+                        rs.getString("status"),
+                        rs.getTimestamp("created_at").toLocalDateTime()
+                    );
+                    suggestions.add(suggestion);
+                }
+            }
+        } catch (SQLException e) {
+            System.err.println("Error saat mengambil saran by user: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return suggestions;
+    }
+
     public boolean updateSuggestionStatus(int suggestionId, String newStatus) {
         if (conn == null) return false;
         String sql = "UPDATE book_suggestions SET status = ? WHERE id_suggestion = ?";
@@ -92,11 +120,6 @@ public class SuggestionDAO {
         }
     }
 
-    /**
-     * Menghapus sebuah saran dari database secara permanen.
-     * @param suggestionId ID dari saran yang akan dihapus.
-     * @return true jika berhasil, false jika gagal.
-     */
     public boolean deleteSuggestion(int suggestionId) {
         if (conn == null) return false;
         String sql = "DELETE FROM book_suggestions WHERE id_suggestion = ?";

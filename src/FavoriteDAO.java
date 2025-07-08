@@ -6,8 +6,6 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
-
-
 public class FavoriteDAO {
     private Connection conn;
 
@@ -18,15 +16,15 @@ public class FavoriteDAO {
         }
     }
 
-  
     public boolean addFavorite(int userId, int bookId) {
         if (conn == null) {
             System.err.println("Koneksi null di addFavorite.");
             return false;
         }
-     
+        
+        // Cek dulu untuk menghindari query yang tidak perlu
         if (isFavorite(userId, bookId)) {
-            System.out.println("Buku (ID: " + bookId + ") sudah ada di favorit user (ID: " + userId + ").");
+            System.out.println("Buku (ID: " + bookId + ") sudah ada di favorit user (ID: " + userId + "). Dianggap sukses.");
             return true; 
         }
 
@@ -34,16 +32,16 @@ public class FavoriteDAO {
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             stmt.setInt(2, bookId);
-            stmt.setTimestamp(3, new Timestamp(System.currentTimeMillis())); // Waktu saat ini
+            stmt.setTimestamp(3, new Timestamp(System.currentTimeMillis()));
             int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("Buku (ID: " + bookId + ") berhasil ditambahkan ke favorit user (ID: " + userId + ")");
-                return true;
-            }
+            return affectedRows > 0;
+            
         } catch (SQLException e) {
-    
+            // ✅ PERBAIKAN UTAMA DI SINI
+            // Error code 1062 adalah untuk 'Duplicate entry'
             if (e.getErrorCode() == 1062) { 
-                 System.out.println("Gagal menambahkan favorit: Buku (ID: " + bookId + ") sudah ada di favorit user (ID: " + userId + ") - dicegat oleh DB.");
+                 System.out.println("Gagal menambahkan favorit (dicegat DB), tapi dianggap sukses karena data sudah ada.");
+                 return true; // Anggap sukses jika sudah ada
             } else {
                 System.err.println("Error adding favorite: " + e.getMessage());
                 e.printStackTrace();
@@ -52,43 +50,28 @@ public class FavoriteDAO {
         return false;
     }
 
-  
     public boolean removeFavorite(int userId, int bookId) {
-        if (conn == null) {
-            System.err.println("Koneksi null di removeFavorite.");
-            return false;
-        }
+        if (conn == null) return false;
         String sql = "DELETE FROM favorites WHERE id_user = ? AND id_book = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             stmt.setInt(2, bookId);
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                System.out.println("Buku (ID: " + bookId + ") berhasil dihapus dari favorit user (ID: " + userId + ")");
-                return true;
-            } else {
-                 System.out.println("Tidak ada buku (ID: " + bookId + ") di favorit user (ID: " + userId + ") untuk dihapus.");
-                return false; 
-            }
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             System.err.println("Error removing favorite: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
     }
-
    
     public boolean isFavorite(int userId, int bookId) {
-        if (conn == null) {
-            System.err.println("Koneksi null di isFavorite.");
-            return false;
-        }
+        if (conn == null) return false;
         String sql = "SELECT id_favorite FROM favorites WHERE id_user = ? AND id_book = ?";
         try (PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, userId);
             stmt.setInt(2, bookId);
             try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next(); // Jika ada baris, berarti sudah favorit
+                return rs.next();
             }
         } catch (SQLException e) {
             System.err.println("Error checking if book is favorite: " + e.getMessage());
@@ -97,14 +80,11 @@ public class FavoriteDAO {
         return false;
     }
 
-   
     public List<Book> getUserFavoriteBooks(int userId) {
         List<Book> favoriteBooks = new ArrayList<>();
-        if (conn == null) {
-            System.err.println("Koneksi null di getUserFavoriteBooks.");
-            return favoriteBooks;
-        } 
-        String sql = "SELECT b.id_book, b.title, b.author, b.cover_image_path, b.book_file_path, b.rating " +
+        if (conn == null) return favoriteBooks;
+        
+        String sql = "SELECT b.id_book, b.title, b.author, b.isbn, b.cover_image_path, b.book_file_path, b.rating " +
                      "FROM favorites f " +
                      "JOIN books b ON f.id_book = b.id_book " +
                      "WHERE f.id_user = ? " +
@@ -114,11 +94,11 @@ public class FavoriteDAO {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
-                   
                     Book book = new Book(
                         rs.getInt("id_book"),
                         rs.getString("title"),
                         rs.getString("author"),
+                        rs.getString("isbn"),
                         rs.getString("cover_image_path"),
                         rs.getString("book_file_path"),
                         rs.getFloat("rating")
@@ -130,7 +110,6 @@ public class FavoriteDAO {
             System.err.println("Error fetching user favorite books: " + e.getMessage());
             e.printStackTrace();
         }
-        System.out.println("User (ID: " + userId + ") memiliki " + favoriteBooks.size() + " buku favorit.");
         return favoriteBooks;
     }
 }

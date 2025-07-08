@@ -119,3 +119,8 @@ CREATE TABLE `book_suggestions` (
   PRIMARY KEY (`id_suggestion`),
   FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `book_suggestions` 
+CHANGE `status` `status` 
+ENUM('pending', 'approved', 'rejected') 
+NOT NULL DEFAULT 'pending';

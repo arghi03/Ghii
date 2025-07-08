@@ -6,7 +6,7 @@ import java.io.File;
 public class EditBookScreen extends JDialog { 
     private BookDAO bookDAO;
     private Book bookToEdit;
-    private JTextField titleField, authorField;
+    private JTextField titleField, authorField, isbnField; // ✅ FIELD BARU UNTUK ISBN
     private JSpinner ratingSpinner; 
     private JLabel coverImageLabel, bookFileLabel;
     private String coverImagePath, bookFilePath;
@@ -29,7 +29,7 @@ public class EditBookScreen extends JDialog {
             return;
         }
 
-        setSize(550, 450); 
+        setSize(550, 500); // Perbesar sedikit tinggi frame untuk field baru
         setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(owner);
         setResizable(false);
@@ -43,6 +43,7 @@ public class EditBookScreen extends JDialog {
     private void populateForm() {
         titleField.setText(bookToEdit.getTitle());
         authorField.setText(bookToEdit.getAuthor());
+        isbnField.setText(bookToEdit.getIsbn()); // ✅ ISI FIELD ISBN
         ratingSpinner.setValue((double) bookToEdit.getRating());
         
         this.coverImagePath = bookToEdit.getCoverImagePath();
@@ -76,12 +77,14 @@ public class EditBookScreen extends JDialog {
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.anchor = GridBagConstraints.WEST;
 
+        // Judul
         gbc.gridx = 0; gbc.gridy = 0;
         formPanel.add(new JLabel("Judul Buku:"), gbc);
         titleField = new JTextField(20);
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(titleField, gbc);
         
+        // Penulis
         gbc.gridy++;
         gbc.gridx = 0; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Penulis:"), gbc);
@@ -89,6 +92,15 @@ public class EditBookScreen extends JDialog {
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(authorField, gbc);
 
+        // ✅ TAMBAHKAN INPUT FIELD UNTUK ISBN
+        gbc.gridy++;
+        gbc.gridx = 0; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("ISBN:"), gbc);
+        isbnField = new JTextField(20);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(isbnField, gbc);
+
+        // Rating
         gbc.gridy++;
         gbc.gridx = 0; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Rating (0.0 - 5.0):"), gbc);
@@ -99,6 +111,7 @@ public class EditBookScreen extends JDialog {
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(ratingSpinner, gbc);
 
+        // ... (UI untuk pilih file tidak berubah)
         gbc.gridy++;
         gbc.gridx = 0; gbc.gridwidth = 1;
         formPanel.add(new JLabel("Gambar Sampul:"), gbc);
@@ -162,15 +175,18 @@ public class EditBookScreen extends JDialog {
     private void saveChanges() {
         String title = titleField.getText().trim();
         String author = authorField.getText().trim();
+        String isbn = isbnField.getText().trim(); // ✅ AMBIL NILAI ISBN
         float rating = ((Double) ratingSpinner.getValue()).floatValue();
 
-        if (title.isEmpty() || author.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Judul dan penulis tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+        if (title.isEmpty() || author.isEmpty() || isbn.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Judul, penulis, dan ISBN tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
+        // ✅ UPDATE SEMUA FIELD DI OBJEK BUKU
         bookToEdit.setTitle(title);
         bookToEdit.setAuthor(author);
+        bookToEdit.setIsbn(isbn);
         bookToEdit.setRating(rating);
         bookToEdit.setCoverImagePath(coverImagePath);
         bookToEdit.setBookFilePath(bookFilePath);
@@ -178,9 +194,9 @@ public class EditBookScreen extends JDialog {
         boolean success = bookDAO.updateBook(bookToEdit);
         if (success) {
             JOptionPane.showMessageDialog(this, "Data buku '" + title + "' berhasil diperbarui!");
-            dispose();
+            dispose(); // Tutup dialog setelah berhasil
         } else {
-            JOptionPane.showMessageDialog(this, "Gagal memperbarui data buku!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal memperbarui data buku! Cek konsol atau kemungkinan ISBN duplikat.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 

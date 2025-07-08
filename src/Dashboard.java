@@ -177,7 +177,9 @@ public class Dashboard extends JFrame {
             sidebarPanel.add(createSidebarButton("Lihat Saran Buku", createSVGIcon("icons/suggestion-list.svg"), false, () -> new SuggestionListScreen(user)));
         } 
         else { // User
-            sidebarPanel.add(createSidebarButton("Saran Buku", createSVGIcon("icons/suggestion.svg"), false, () -> new SuggestionDialog(this, this.user).setVisible(true)));
+            // ✅✅✅ PERUBAHAN DI BARIS INI ✅✅✅
+            // Mengubah dari memanggil SuggestionDialog menjadi SuggestionHistoryScreen
+            sidebarPanel.add(createSidebarButton("Saran Buku", createSVGIcon("icons/suggestion.svg"), false, () -> new SuggestionHistoryScreen(this.user)));
         }
     }
 
@@ -298,14 +300,11 @@ public class Dashboard extends JFrame {
         if (lastReadBook != null) {
             JPanel contentPanel = new JPanel(new BorderLayout(25, 0));
             contentPanel.setOpaque(false);
-
-            // Panel untuk sampul buku
             JLabel coverLabel = new JLabel();
             coverLabel.setPreferredSize(new Dimension(80, 110));
             coverLabel.setHorizontalAlignment(SwingConstants.CENTER);
             coverLabel.setVerticalAlignment(SwingConstants.CENTER);
             coverLabel.setBorder(BorderFactory.createLineBorder(Color.LIGHT_GRAY));
-            
             if (lastReadBook.getCoverImagePath() != null && !lastReadBook.getCoverImagePath().isEmpty()) {
                 try {
                     File coverFile = new File(lastReadBook.getCoverImagePath());
@@ -323,20 +322,15 @@ public class Dashboard extends JFrame {
                 coverLabel.setText("No Cover");
             }
             contentPanel.add(coverLabel, BorderLayout.WEST);
-
-            // Panel untuk info buku dan tombol
             JPanel infoActionPanel = new JPanel();
             infoActionPanel.setOpaque(false);
             infoActionPanel.setLayout(new BoxLayout(infoActionPanel, BoxLayout.Y_AXIS));
-            
             JLabel title = new JLabel(lastReadBook.getTitle());
             title.setFont(new Font("Arial", Font.BOLD, 18));
             title.setAlignmentX(Component.LEFT_ALIGNMENT);
-            
             JLabel author = new JLabel("by " + lastReadBook.getAuthor());
             author.setFont(new Font("Arial", Font.ITALIC, 14));
             author.setAlignmentX(Component.LEFT_ALIGNMENT);
-
             JButton continueButton = new JButton("Lanjut Baca");
             continueButton.setFont(new Font("Arial", Font.BOLD, 12));
             continueButton.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -348,22 +342,18 @@ public class Dashboard extends JFrame {
                     JOptionPane.showMessageDialog(this, "File PDF untuk buku ini tidak ditemukan.", "Error", JOptionPane.ERROR_MESSAGE);
                 }
             });
-
             infoActionPanel.add(title);
             infoActionPanel.add(Box.createRigidArea(new Dimension(0, 5)));
             infoActionPanel.add(author);
-            infoActionPanel.add(Box.createVerticalGlue()); // Mendorong tombol ke bawah
+            infoActionPanel.add(Box.createVerticalGlue());
             infoActionPanel.add(continueButton);
-
             contentPanel.add(infoActionPanel, BorderLayout.CENTER);
             wrapperPanel.add(contentPanel, BorderLayout.CENTER);
-
         } else {
             JLabel noBookLabel = new JLabel("Anda belum pernah membaca buku apapun.", SwingConstants.CENTER);
             noBookLabel.setFont(new Font("Arial", Font.ITALIC, 14));
             wrapperPanel.add(noBookLabel, BorderLayout.CENTER);
         }
-
         return wrapperPanel;
     }
 
@@ -378,7 +368,7 @@ public class Dashboard extends JFrame {
     private void searchBooks() {
         String keyword = searchField.getText().trim();
         if (keyword.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Masukkan kata kunci pencarian.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Info", "Masukkan kata kunci pencarian.", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
         new BookListScreen(this.user);

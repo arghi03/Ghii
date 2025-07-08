@@ -130,7 +130,7 @@ public class StatisticsScreen extends JFrame {
         leftBottomPanel.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         styleBottomButton(refreshButton, neutralColor.darker(), 120, 40);
-        refreshButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Data direfresh (fitur masa depan)."));
+        refreshButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Data direfresh."));
         JButton exportPdfButton = new JButton("Ekspor ke PDF");
         styleBottomButton(exportPdfButton, new Color(200, 30, 30), 160, 40);
         exportPdfButton.addActionListener(e -> exportToPdf());
@@ -152,7 +152,7 @@ public class StatisticsScreen extends JFrame {
         add(mainPanel);
     }
     
-    // ... (method createStatCard, styleBottomButton, dan semua method create...Chart() dan exportToPdf() tetap sama)
+    // ... (method createStatCard, styleBottomButton, createBarChart, dan createLineChart tetap sama)
     private JPanel createStatCard(String title, String value, Color bgColor) {
         JPanel card = new JPanel(new BorderLayout(5, 5));
         card.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
@@ -192,21 +192,6 @@ public class StatisticsScreen extends JFrame {
         BarRenderer renderer = (BarRenderer) plot.getRenderer(); renderer.setSeriesPaint(0, primaryColor); renderer.setDrawBarOutline(false);
         return barChart;
     }
-    private JFreeChart createPieChart() {
-        DefaultPieDataset dataset = new DefaultPieDataset();
-        Map<String, Integer> statusCounts = loanDAO.getLoanStatusCounts();
-        if (!statusCounts.isEmpty()){
-             for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
-                dataset.setValue(entry.getKey(), entry.getValue());
-            }
-        }
-        JFreeChart pieChart = ChartFactory.createPieChart("Komposisi Status Peminjaman", dataset, true, true, false); 
-        pieChart.setBackgroundPaint(Color.WHITE); pieChart.getTitle().setFont(new Font("Arial", Font.BOLD, 14));
-        PiePlot plot = (PiePlot) pieChart.getPlot(); plot.setBackgroundPaint(Color.WHITE); plot.setOutlineVisible(false); plot.setShadowPaint(null); plot.setLabelFont(new Font("Arial", Font.PLAIN, 10)); plot.setLabelBackgroundPaint(null); plot.setLabelOutlinePaint(null); plot.setLabelShadowPaint(null);
-        plot.setSectionPaint("Approved", successColor); plot.setSectionPaint("Pending", warningColor); plot.setSectionPaint("Returned", neutralColor); plot.setSectionPaint("Rejected", dangerColor);
-        PieSectionLabelGenerator labelGenerator = new StandardPieSectionLabelGenerator("{0} ({2})", new DecimalFormat("0"), new DecimalFormat("0.0%")); plot.setLabelGenerator(labelGenerator);
-        return pieChart;
-    }
     private JFreeChart createLineChart() {
         final int DAYS_TO_SHOW = 30;
         DefaultCategoryDataset dataset = new DefaultCategoryDataset();
@@ -226,6 +211,43 @@ public class StatisticsScreen extends JFrame {
         LineAndShapeRenderer renderer = (LineAndShapeRenderer) plot.getRenderer(); renderer.setSeriesStroke(0, new BasicStroke(2.0f)); renderer.setSeriesPaint(0, primaryColor); renderer.setSeriesShapesVisible(0, false);
         return lineChart;
     }
+
+    // ✅✅✅ PERUBAHAN HANYA DI DALAM METHOD INI ✅✅✅
+    private JFreeChart createPieChart() {
+        DefaultPieDataset dataset = new DefaultPieDataset();
+        Map<String, Integer> statusCounts = loanDAO.getLoanStatusCounts();
+        if (!statusCounts.isEmpty()){
+             for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
+                dataset.setValue(entry.getKey(), entry.getValue());
+            }
+        }
+        JFreeChart pieChart = ChartFactory.createPieChart("Komposisi Status Peminjaman", dataset, true, true, false); 
+        pieChart.setBackgroundPaint(Color.WHITE); 
+        pieChart.getTitle().setFont(new Font("Arial", Font.BOLD, 14));
+        PiePlot plot = (PiePlot) pieChart.getPlot(); 
+        plot.setBackgroundPaint(Color.WHITE); 
+        plot.setOutlineVisible(false); 
+        plot.setShadowPaint(null); 
+        plot.setLabelFont(new Font("Arial", Font.PLAIN, 10)); 
+        plot.setLabelBackgroundPaint(null); 
+        plot.setLabelOutlinePaint(null);
+        plot.setLabelShadowPaint(null);
+        plot.setSectionPaint("Approved", successColor); 
+        plot.setSectionPaint("Pending", warningColor); 
+        plot.setSectionPaint("Returned", neutralColor); 
+        plot.setSectionPaint("Rejected", dangerColor);
+        
+        // ✅ PERUBAHAN DI SINI: Memisahkan kurung untuk jumlah dan persen
+        // Format: {0} = Nama, {1} = Jumlah, {2} = Persen
+        PieSectionLabelGenerator labelGenerator = new StandardPieSectionLabelGenerator(
+            "{0} ({1}) ({2})", new DecimalFormat("0"), new DecimalFormat("0.0%")
+        );
+        plot.setLabelGenerator(labelGenerator);
+        
+        return pieChart;
+    }
+    
+    // ... (semua method ekspor dan helpernya tetap sama)
     private void exportToPdf() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Simpan Laporan PDF");
@@ -308,41 +330,34 @@ public class StatisticsScreen extends JFrame {
         PDImageXObject pdImage = LosslessFactory.createFromImage(document, chartImage);
         contentStream.drawImage(pdImage, x, y - height, width, height);
     }
-    
-    // ✅✅✅ METHOD EKSPOR EXCEL DENGAN PENAMBAHAN BARIS TOTAL ✅✅✅
     private void exportToExcel() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Simpan Laporan Excel");
         fileChooser.setSelectedFile(new File("Laporan_Statistik_LiteraSpace.xlsx"));
         fileChooser.setFileFilter(new FileNameExtensionFilter("Excel Workbook (*.xlsx)", "xlsx"));
-
         int userSelection = fileChooser.showSaveDialog(this);
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
             if (!fileToSave.getAbsolutePath().endsWith(".xlsx")) {
                 fileToSave = new File(fileToSave.getAbsolutePath() + ".xlsx");
             }
-
             try (Workbook workbook = new XSSFWorkbook()) {
-                // Style untuk baris Total
                 CellStyle totalStyle = workbook.createCellStyle();
                 XSSFFont totalFont = ((XSSFWorkbook) workbook).createFont();
                 totalFont.setBold(true);
                 totalStyle.setFont(totalFont);
-
-                // --- Sheet 1: Top 5 Buku ---
                 Sheet sheetTopBuku = workbook.createSheet("Top 5 Buku Terpopuler");
                 createHeaderRow(sheetTopBuku, "Judul Buku", "Jumlah Peminjaman");
                 Map<String, Integer> topBooks = loanDAO.getTopBorrowedBooks(5);
                 int rowNum = 1;
-                int totalPeminjamanBuku = 0; // Variabel untuk menghitung total
+                int totalPeminjamanBuku = 0;
                 for (Map.Entry<String, Integer> entry : topBooks.entrySet()) {
                     Row row = sheetTopBuku.createRow(rowNum++);
                     row.createCell(0).setCellValue(entry.getKey());
                     row.createCell(1).setCellValue(entry.getValue());
-                    totalPeminjamanBuku += entry.getValue(); // Tambahkan ke total
+                    totalPeminjamanBuku += entry.getValue();
                 }
-                sheetTopBuku.createRow(rowNum++); // Baris kosong sebagai spasi
+                sheetTopBuku.createRow(rowNum++);
                 Row totalBukuRow = sheetTopBuku.createRow(rowNum);
                 Cell totalBukuLabel = totalBukuRow.createCell(0);
                 totalBukuLabel.setCellValue("Total Peminjaman (Top 5)");
@@ -352,20 +367,18 @@ public class StatisticsScreen extends JFrame {
                 totalBukuValue.setCellStyle(totalStyle);
                 sheetTopBuku.autoSizeColumn(0);
                 sheetTopBuku.autoSizeColumn(1);
-
-                // --- Sheet 2: Komposisi Status ---
                 Sheet sheetStatus = workbook.createSheet("Komposisi Status Peminjaman");
                 createHeaderRow(sheetStatus, "Status", "Jumlah");
                 Map<String, Integer> statusCounts = loanDAO.getLoanStatusCounts();
                 rowNum = 1;
-                int totalStatus = 0; // Variabel untuk menghitung total
+                int totalStatus = 0;
                 for (Map.Entry<String, Integer> entry : statusCounts.entrySet()) {
                     Row row = sheetStatus.createRow(rowNum++);
                     row.createCell(0).setCellValue(entry.getKey());
                     row.createCell(1).setCellValue(entry.getValue());
-                    totalStatus += entry.getValue(); // Tambahkan ke total
+                    totalStatus += entry.getValue();
                 }
-                sheetStatus.createRow(rowNum++); // Baris kosong
+                sheetStatus.createRow(rowNum++);
                 Row totalStatusRow = sheetStatus.createRow(rowNum);
                 Cell totalStatusLabel = totalStatusRow.createCell(0);
                 totalStatusLabel.setCellValue("Total Keseluruhan");
@@ -375,21 +388,19 @@ public class StatisticsScreen extends JFrame {
                 totalStatusValue.setCellStyle(totalStyle);
                 sheetStatus.autoSizeColumn(0);
                 sheetStatus.autoSizeColumn(1);
-
-                // --- Sheet 3: Tren Harian ---
                 Sheet sheetTren = workbook.createSheet("Tren Peminjaman Harian");
                 createHeaderRow(sheetTren, "Tanggal", "Jumlah Peminjaman");
                 Map<LocalDate, Integer> dailyCounts = loanDAO.getDailyLoanCounts(30);
                 rowNum = 1;
-                int totalPeminjaman30Hari = 0; // Variabel untuk menghitung total
+                int totalPeminjaman30Hari = 0;
                 DateTimeFormatter excelDateFormatter = DateTimeFormatter.ofPattern("dd-MMM-yyyy");
                 for (Map.Entry<LocalDate, Integer> entry : dailyCounts.entrySet()) {
                     Row row = sheetTren.createRow(rowNum++);
                     row.createCell(0).setCellValue(entry.getKey().format(excelDateFormatter));
                     row.createCell(1).setCellValue(entry.getValue());
-                    totalPeminjaman30Hari += entry.getValue(); // Tambahkan ke total
+                    totalPeminjaman30Hari += entry.getValue();
                 }
-                sheetTren.createRow(rowNum++); // Baris kosong
+                sheetTren.createRow(rowNum++);
                 Row totalTrenRow = sheetTren.createRow(rowNum);
                 Cell totalTrenLabel = totalTrenRow.createCell(0);
                 totalTrenLabel.setCellValue("Total Peminjaman (30 Hari)");
@@ -399,29 +410,22 @@ public class StatisticsScreen extends JFrame {
                 totalTrenValue.setCellStyle(totalStyle);
                 sheetTren.autoSizeColumn(0);
                 sheetTren.autoSizeColumn(1);
-
-                // Menulis file
                 try (FileOutputStream fileOut = new FileOutputStream(fileToSave)) {
                     workbook.write(fileOut);
                 }
-                
                 JOptionPane.showMessageDialog(this, "Laporan Excel berhasil disimpan di:\n" + fileToSave.getAbsolutePath(), "Ekspor Berhasil", JOptionPane.INFORMATION_MESSAGE);
-
             } catch (IOException e) {
                 e.printStackTrace();
                 JOptionPane.showMessageDialog(this, "Gagal menyimpan file Excel: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
-    
-    // Method bantuan untuk membuat header row di excel
     private void createHeaderRow(Sheet sheet, String... headers) {
         Row headerRow = sheet.createRow(0);
         CellStyle headerStyle = sheet.getWorkbook().createCellStyle();
         XSSFFont font = ((XSSFWorkbook) sheet.getWorkbook()).createFont();
         font.setBold(true);
         headerStyle.setFont(font);
-
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);

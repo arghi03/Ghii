@@ -55,6 +55,7 @@ public class LoanManagementScreen extends JFrame {
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
+                // Hanya kolom Aksi (indeks 4) yang bisa diedit untuk tombol
                 return column == 4; 
             }
         };
@@ -67,7 +68,8 @@ public class LoanManagementScreen extends JFrame {
         pendingLoansTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION); 
 
         TableColumnModel columnModel = pendingLoansTable.getColumnModel();
-        columnModel.getColumn(0).setPreferredWidth(80);
+        columnModel.getColumn(0).setMaxWidth(80); // ID tidak perlu lebar
+        columnModel.getColumn(0).setMinWidth(80);
         columnModel.getColumn(1).setPreferredWidth(150);
         columnModel.getColumn(2).setPreferredWidth(250);
         columnModel.getColumn(3).setPreferredWidth(120);
@@ -76,7 +78,6 @@ public class LoanManagementScreen extends JFrame {
         ActionPanelRendererAndEditor actionHandler = new ActionPanelRendererAndEditor(pendingLoansTable);
         columnModel.getColumn(4).setCellRenderer(actionHandler);
         columnModel.getColumn(4).setCellEditor(actionHandler);
-
 
         JScrollPane scrollPane = new JScrollPane(pendingLoansTable);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
@@ -111,9 +112,14 @@ public class LoanManagementScreen extends JFrame {
     private void loadPendingLoans() {
         tableModel.setRowCount(0); 
         List<Loan> pendingLoans = loanDAO.getPendingLoans(); 
+        
+        // ✅ MENAMBAHKAN LOG DEBUG UNTUK MELIHAT HASIL DARI DAO
+        System.out.println("[DEBUG] Jumlah pending loans yang ditemukan oleh DAO: " + pendingLoans.size());
 
         if (pendingLoans.isEmpty()) {
-            tableModel.addRow(new Object[]{"-", "Tidak ada permintaan pending", "-", "-", null});
+            // Non-aktifkan tombol jika tidak ada data
+            Object[] placeholderRow = {"-", "Tidak ada permintaan pending", "-", "-", ""};
+            tableModel.addRow(placeholderRow);
         } else {
             for (Loan loan : pendingLoans) {
                 tableModel.addRow(new Object[]{
@@ -121,7 +127,7 @@ public class LoanManagementScreen extends JFrame {
                         loan.getUsername() != null ? loan.getUsername() : "N/A",
                         loan.getBookTitle() != null ? loan.getBookTitle() : "N/A",
                         loan.getRequestDate() != null ? loan.getRequestDate().format(DATETIME_FORMATTER) : "N/A",
-                        "Aksi" 
+                        "Aksi" // Placeholder untuk panel tombol
                 });
             }
         }
@@ -133,8 +139,6 @@ public class LoanManagementScreen extends JFrame {
         button.setFocusPainted(false);
         button.setFont(new Font("Arial", Font.BOLD, 12));
         button.setPreferredSize(new Dimension(width, height));
-        
-      
         button.setOpaque(true);
         button.setBorderPainted(false);
         
@@ -149,6 +153,7 @@ public class LoanManagementScreen extends JFrame {
         });
     }
 
+    // Inner class untuk menangani tombol di dalam tabel
     class ActionPanelRendererAndEditor extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
         private JPanel panel;
         private JButton approveButton;
@@ -158,16 +163,16 @@ public class LoanManagementScreen extends JFrame {
 
         public ActionPanelRendererAndEditor(JTable table) {
             this.table = table;
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 2)); // Sedikit padding vertikal
             panel.setOpaque(true);
 
             approveButton = new JButton("Setujui");
-            styleActionButton(approveButton, successColor, 80, 25);
+            styleButtonInCell(approveButton, successColor);
             approveButton.setActionCommand("approve");
             approveButton.addActionListener(this);
 
             rejectButton = new JButton("Tolak");
-            styleActionButton(rejectButton, dangerColor, 80, 25);
+            styleButtonInCell(rejectButton, dangerColor);
             rejectButton.setActionCommand("reject");
             rejectButton.addActionListener(this);
 
@@ -175,26 +180,23 @@ public class LoanManagementScreen extends JFrame {
             panel.add(rejectButton);
         }
 
-        private void styleActionButton(JButton button, Color bgColor, int width, int height) {
+        private void styleButtonInCell(JButton button, Color bgColor) {
             button.setBackground(bgColor);
             button.setForeground(Color.WHITE);
             button.setFocusPainted(false);
-            button.setFont(new Font("Arial", Font.PLAIN, 10)); 
-            button.setPreferredSize(new Dimension(width, height));
-            button.setMargin(new Insets(2,2,2,2));
-            
-            button.setOpaque(true);
-            button.setBorderPainted(false);
+            button.setFont(new Font("Arial", Font.BOLD, 10)); 
+            button.setPreferredSize(new Dimension(80, 25));
         }
         
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if (isSelected) {
-                panel.setBackground(table.getSelectionBackground());
-            } else {
-                panel.setBackground(table.getBackground());
-            }
-            this.currentRow = row;
+            panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+            
+            // ✅ Non-aktifkan tombol jika ini adalah baris placeholder
+            boolean isPlaceholder = table.getModel().getValueAt(row, 0).toString().equals("-");
+            approveButton.setEnabled(!isPlaceholder);
+            rejectButton.setEnabled(!isPlaceholder);
+
             return panel;
         }
 
@@ -203,32 +205,15 @@ public class LoanManagementScreen extends JFrame {
             this.currentRow = row;
             return panel;
         }
-
-        @Override
-        public Object getCellEditorValue() {
-            return null; 
-        }
-
-        @Override
-        public boolean isCellEditable(java.util.EventObject anEvent) {
-            return true; 
-        }
         
+        @Override
+        public Object getCellEditorValue() { return null; }
+
         @Override
         public void actionPerformed(ActionEvent e) {
             fireEditingStopped(); 
-
-            Object idLoanObj = table.getModel().getValueAt(this.currentRow, 0);
-            if (idLoanObj == null || idLoanObj.toString().equals("-")) { 
-                System.err.println("Tidak bisa melakukan aksi: ID Loan tidak valid di baris " + this.currentRow);
-                return;
-            }
             
-            if (!(idLoanObj instanceof Integer)) {
-                System.err.println("Tidak bisa melakukan aksi: Tipe data ID Loan tidak valid di baris " + this.currentRow + ". Ditemukan: " + idLoanObj.getClass().getName());
-                return;
-            }
-            int idLoan = (int) idLoanObj;
+            int idLoan = (int) table.getModel().getValueAt(this.currentRow, 0);
 
             String command = e.getActionCommand();
             boolean success = false;
@@ -243,10 +228,10 @@ public class LoanManagementScreen extends JFrame {
             }
 
             if (success) {
-                JOptionPane.showMessageDialog(table.getParent().getParent(), actionMessage, "Status Update", JOptionPane.INFORMATION_MESSAGE);
-                loadPendingLoans(); 
+                JOptionPane.showMessageDialog(table, actionMessage, "Status Update", JOptionPane.INFORMATION_MESSAGE);
+                loadPendingLoans(); // Muat ulang data setelah aksi
             } else {
-                JOptionPane.showMessageDialog(table.getParent().getParent(), actionMessage, "Error Update", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(table, actionMessage, "Error Update", JOptionPane.ERROR_MESSAGE);
             }
         }
     }

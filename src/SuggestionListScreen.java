@@ -1,38 +1,33 @@
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
-import javax.swing.table.TableCellRenderer;
-import javax.swing.table.TableColumnModel;
-import javax.swing.table.DefaultTableCellRenderer;
-import javax.swing.AbstractCellEditor;
-import javax.swing.table.TableCellEditor;
+import javax.swing.border.CompoundBorder;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.LineBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class SuggestionListScreen extends JFrame {
     private SuggestionDAO suggestionDAO;
     private User currentUser;
-    private DefaultTableModel tableModel;
-    private JTable suggestionTable;
+    private JPanel suggestionsPanel;
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
     // Palet Warna
-    private Color primaryColor = new Color(30, 58, 138); 
-    private Color viewColor = new Color(23, 162, 184);  
-    private Color dangerColor = new Color(220, 53, 69);
-    private Color headerColor = new Color(224, 231, 255); 
-    private Color backgroundColor = new Color(240, 242, 245);
-    private Color neutralColor = new Color(107, 114, 128);
+    private final Color primaryColor = new Color(30, 58, 138); 
+    private final Color successColor = new Color(22, 163, 74);
+    private final Color dangerColor = new Color(220, 38, 38);
+    private final Color warningColor = new Color(245, 158, 11);
+    private final Color backgroundColor = new Color(240, 242, 245);
+    private final Color neutralColor = new Color(107, 114, 128);
+    private final Color cardBorderColor = new Color(229, 231, 235);
 
     public SuggestionListScreen(User user) {
         this.currentUser = user;
         this.suggestionDAO = new SuggestionDAO(DBConnection.getConnection());
 
         setTitle("Daftar Saran Buku - " + currentUser.getNama());
-        setSize(1000, 600);
+        setSize(1000, 700);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -43,173 +38,224 @@ public class SuggestionListScreen extends JFrame {
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 20));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(backgroundColor);
 
         JLabel titleLabel = new JLabel("Daftar Saran Buku dari Pengguna", SwingConstants.CENTER);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(primaryColor);
-        titleLabel.setBorder(BorderFactory.createEmptyBorder(0,0,10,0));
         mainPanel.add(titleLabel, BorderLayout.NORTH);
 
-        String[] columnNames = {"ID", "Judul Saran", "Penulis Saran", "Disarankan Oleh", "Tanggal", "Status", "Aksi"};
-        tableModel = new DefaultTableModel(columnNames, 0) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 6;  
-            }
-        };
-        suggestionTable = new JTable(tableModel);
-        suggestionTable.setRowHeight(35);
-        suggestionTable.getTableHeader().setFont(new Font("Arial", Font.BOLD, 12));
-        suggestionTable.getTableHeader().setBackground(headerColor);
+        suggestionsPanel = new JPanel();
+        suggestionsPanel.setLayout(new BoxLayout(suggestionsPanel, BoxLayout.Y_AXIS));
+        suggestionsPanel.setBackground(backgroundColor);
 
-        TableColumnModel columnModel = suggestionTable.getColumnModel();
-        columnModel.getColumn(0).setMaxWidth(50);
-        columnModel.getColumn(3).setPreferredWidth(150);
-        columnModel.getColumn(4).setPreferredWidth(120);
-        columnModel.getColumn(5).setPreferredWidth(100);
-        columnModel.getColumn(6).setPreferredWidth(200);
+        JScrollPane scrollPane = new JScrollPane(suggestionsPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        // Action handler untuk tombol di dalam tabel
-        ActionPanel actionHandler = new ActionPanel(suggestionTable);
-        columnModel.getColumn(6).setCellRenderer(actionHandler);
-        columnModel.getColumn(6).setCellEditor(actionHandler);
-        
-        // Center align untuk beberapa kolom
-        DefaultTableCellRenderer centerRenderer = new DefaultTableCellRenderer();
-        centerRenderer.setHorizontalAlignment(SwingConstants.CENTER);
-        columnModel.getColumn(0).setCellRenderer(centerRenderer);
-        columnModel.getColumn(4).setCellRenderer(centerRenderer);
-        columnModel.getColumn(5).setCellRenderer(centerRenderer);
-
-        JScrollPane scrollPane = new JScrollPane(suggestionTable);
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
-        // Panel Tombol Bawah
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setOpaque(false);
-
-        JButton refreshButton = new JButton("Refresh Daftar");
-        refreshButton.addActionListener(e -> loadSuggestions());
-        
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottomPanel.setBackground(backgroundColor);
         JButton backButton = new JButton("Kembali ke Dashboard");
-        backButton.addActionListener(e -> dispose()); 
-
-        JPanel leftBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        leftBottomPanel.setOpaque(false);
-        leftBottomPanel.add(refreshButton);
-        
-        JPanel rightBottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        rightBottomPanel.setOpaque(false);
-        rightBottomPanel.add(backButton);
-        
-        bottomPanel.add(leftBottomPanel, BorderLayout.WEST);
-        bottomPanel.add(rightBottomPanel, BorderLayout.EAST);
+        backButton.addActionListener(e -> dispose());
+        bottomPanel.add(backButton);
         mainPanel.add(bottomPanel, BorderLayout.SOUTH);
 
         add(mainPanel);
     }
 
     private void loadSuggestions() {
-        tableModel.setRowCount(0);
+        suggestionsPanel.removeAll();
         List<Suggestion> suggestions = suggestionDAO.getAllSuggestions();
 
         if (suggestions.isEmpty()) {
-            tableModel.addRow(new Object[]{"-", "Belum ada saran yang masuk.", "-", "-", "-", "-", null});
+            JLabel emptyLabel = new JLabel("Belum ada saran yang masuk.", SwingConstants.CENTER);
+            emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
+            emptyLabel.setForeground(neutralColor);
+            suggestionsPanel.add(emptyLabel);
         } else {
             for (Suggestion s : suggestions) {
-                tableModel.addRow(new Object[]{
-                    s.getId(),
-                    s.getTitle(),
-                    s.getAuthor(),
-                    s.getUsername(),
-                    s.getCreatedAt().format(DATETIME_FORMATTER),
-                    s.getStatus(),
-                    "Aksi" // Placeholder
-                });
+                suggestionsPanel.add(createSuggestionCard(s));
+                suggestionsPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+            }
+        }
+        suggestionsPanel.revalidate();
+        suggestionsPanel.repaint();
+    }
+
+    // ✅✅✅ PERUBAHAN UTAMA ADA DI DALAM METHOD INI ✅✅✅
+    private JPanel createSuggestionCard(Suggestion suggestion) {
+        JPanel card = new JPanel(new BorderLayout(15, 0));
+        card.setBackground(Color.WHITE);
+        card.setBorder(new CompoundBorder(new LineBorder(cardBorderColor, 1), new EmptyBorder(15, 15, 15, 15)));
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
+        card.setMinimumSize(new Dimension(0, 120));
+
+        // -- Panel Kiri (Info Utama) --
+        JPanel infoPanel = new JPanel();
+        infoPanel.setOpaque(false);
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+        
+        // Panel untuk Judul dan Penulis
+        JPanel titleAuthorPanel = new JPanel(new GridBagLayout());
+        titleAuthorPanel.setOpaque(false);
+        titleAuthorPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.anchor = GridBagConstraints.WEST;
+        gbc.insets = new Insets(0, 0, 2, 5); // top, left, bottom, right
+
+        // Judul
+        gbc.gridx = 0; gbc.gridy = 0;
+        JLabel titleLabel = new JLabel(suggestion.getTitle());
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        titleAuthorPanel.add(titleLabel, gbc);
+
+        // Penulis
+        gbc.gridy = 1;
+        String author = (suggestion.getAuthor() != null && !suggestion.getAuthor().isEmpty()) ? "oleh " + suggestion.getAuthor() : "Penulis tidak disebutkan";
+        JLabel authorLabel = new JLabel(author);
+        authorLabel.setFont(new Font("Arial", Font.ITALIC, 12));
+        authorLabel.setForeground(neutralColor);
+        titleAuthorPanel.add(authorLabel, gbc);
+
+        // Panel untuk Catatan (Notes)
+        JPanel notesPanel = new JPanel(new GridBagLayout());
+        notesPanel.setOpaque(false);
+        notesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        GridBagConstraints gbcNotes = new GridBagConstraints();
+        gbcNotes.anchor = GridBagConstraints.NORTHWEST; // Rata kiri atas
+
+        gbcNotes.gridx = 0; gbcNotes.gridy = 0;
+        gbcNotes.insets = new Insets(0, 0, 0, 5);
+        JLabel notesTitleLabel = new JLabel("Catatan:");
+        notesTitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        notesTitleLabel.setForeground(neutralColor);
+        notesPanel.add(notesTitleLabel, gbcNotes);
+
+        gbcNotes.gridx = 1;
+        gbcNotes.weightx = 1.0; // Agar JTextArea mengambil sisa ruang
+        gbcNotes.fill = GridBagConstraints.HORIZONTAL;
+        JTextArea notesArea = new JTextArea(suggestion.getNotes().isEmpty() ? "-" : suggestion.getNotes());
+        notesArea.setFont(new Font("Arial", Font.PLAIN, 12));
+        notesArea.setOpaque(false);
+        notesArea.setEditable(false);
+        notesArea.setLineWrap(true);
+        notesArea.setWrapStyleWord(true);
+        notesPanel.add(notesArea, gbcNotes);
+        
+        // Info Pengirim
+        JLabel suggesterLabel = new JLabel("Disarankan oleh: " + suggestion.getUsername() + " pada " + suggestion.getCreatedAt().format(DATETIME_FORMATTER));
+        suggesterLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        suggesterLabel.setForeground(neutralColor);
+        suggesterLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        // Menambahkan semua ke infoPanel
+        infoPanel.add(titleAuthorPanel);
+        infoPanel.add(Box.createVerticalStrut(8));
+        infoPanel.add(notesPanel);
+        infoPanel.add(Box.createVerticalGlue()); // Mendorong info pengirim ke bawah
+        infoPanel.add(suggesterLabel);
+
+        // -- Panel Kanan (Status dan Aksi) --
+        JPanel actionWrapperPanel = new JPanel(new BorderLayout(0, 5));
+        actionWrapperPanel.setOpaque(false);
+        actionWrapperPanel.setPreferredSize(new Dimension(280, 100)); // Beri ukuran tetap
+
+        JLabel statusLabel = createStatusBadge(suggestion.getStatus());
+        JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
+        statusPanel.setOpaque(false);
+        statusPanel.add(statusLabel);
+        
+        JPanel actionPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
+        actionPanel.setOpaque(false);
+        boolean isPending = suggestion.getStatus().equalsIgnoreCase("pending");
+
+        JButton approveButton = new JButton("Setujui");
+        styleActionButton(approveButton, successColor);
+        approveButton.setEnabled(isPending);
+        approveButton.addActionListener(e -> handleUpdateStatus(suggestion.getId(), "approved"));
+
+        JButton rejectButton = new JButton("Tolak");
+        styleActionButton(rejectButton, warningColor);
+        rejectButton.setEnabled(isPending);
+        rejectButton.addActionListener(e -> handleUpdateStatus(suggestion.getId(), "rejected"));
+
+        JButton deleteButton = new JButton("Hapus");
+        styleActionButton(deleteButton, dangerColor);
+        deleteButton.addActionListener(e -> handleDelete(suggestion.getId()));
+        
+        actionPanel.add(approveButton);
+        actionPanel.add(rejectButton);
+        actionPanel.add(deleteButton);
+
+        actionWrapperPanel.add(statusPanel, BorderLayout.NORTH);
+        actionWrapperPanel.add(actionPanel, BorderLayout.CENTER);
+
+        card.add(infoPanel, BorderLayout.CENTER);
+        card.add(actionWrapperPanel, BorderLayout.EAST);
+
+        return card;
+    }
+
+    private void handleUpdateStatus(int suggestionId, String newStatus) {
+        String action = newStatus.equals("approved") ? "menyetujui" : "menolak";
+        int confirm = JOptionPane.showConfirmDialog(this, "Anda yakin ingin " + action + " saran ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (suggestionDAO.updateSuggestionStatus(suggestionId, newStatus)) {
+                JOptionPane.showMessageDialog(this, "Saran berhasil di-" + newStatus + ".");
+                loadSuggestions();
+            } else {
+                JOptionPane.showMessageDialog(this, "Gagal mengubah status saran.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    // Inner class untuk tombol-tombol aksi
-    class ActionPanel extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
-        private JPanel panel;
-        private JButton viewButton, deleteButton;
-        private JTable table;
-        private int currentRow;
-
-        public ActionPanel(JTable table) {
-            this.table = table;
-            panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 2));
-            panel.setOpaque(true);
-
-            viewButton = new JButton("Tandai Dibaca");
-            styleButton(viewButton, viewColor);
-            viewButton.setActionCommand("view");
-            viewButton.addActionListener(this);
-
-            deleteButton = new JButton("Hapus");
-            styleButton(deleteButton, dangerColor);
-            deleteButton.setActionCommand("delete");
-            deleteButton.addActionListener(this);
-
-            panel.add(viewButton);
-            panel.add(deleteButton);
-        }
-        
-        private void styleButton(JButton button, Color color) {
-            button.setFont(new Font("Arial", Font.BOLD, 10));
-            button.setBackground(color);
-            button.setForeground(Color.WHITE);
-            button.setOpaque(true);
-            button.setFocusPainted(false);
-            button.setBorderPainted(false);
-        }
-
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
-            return panel;
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            this.currentRow = row;
-            return panel;
-        }
-        
-        @Override
-        public Object getCellEditorValue() { return null; }
-
-        @Override
-        public void actionPerformed(ActionEvent e) {
-            fireEditingStopped();
-            
-            // Ambil ID saran dari kolom pertama
-            int suggestionId = (int) table.getModel().getValueAt(this.currentRow, 0);
-            String command = e.getActionCommand();
-
-            if ("view".equals(command)) {
-                boolean success = suggestionDAO.updateSuggestionStatus(suggestionId, "viewed");
-                if(success) {
-                    loadSuggestions();  
-                } else {
-                    JOptionPane.showMessageDialog(table, "Gagal mengubah status saran.", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-
-            } else if ("delete".equals(command)) {
-                int confirm = JOptionPane.showConfirmDialog(table, "Yakin ingin menghapus saran ini secara permanen?", "Konfirmasi Hapus", JOptionPane.YES_NO_OPTION);
-                if (confirm == JOptionPane.YES_OPTION) {
-                    boolean success = suggestionDAO.deleteSuggestion(suggestionId);
-                    if (success) {
-                        loadSuggestions(); 
-                    } else {
-                        JOptionPane.showMessageDialog(table, "Gagal menghapus saran.", "Error", JOptionPane.ERROR_MESSAGE);
-                    }
-                }
+    private void handleDelete(int suggestionId) {
+        int confirm = JOptionPane.showConfirmDialog(this, "Yakin ingin menghapus saran ini secara permanen?", "Konfirmasi Hapus", JOptionPane.WARNING_MESSAGE);
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (suggestionDAO.deleteSuggestion(suggestionId)) {
+                JOptionPane.showMessageDialog(this, "Saran berhasil dihapus.");
+                loadSuggestions();
+            } else {
+                JOptionPane.showMessageDialog(this, "Gagal menghapus saran.", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+    
+    private JLabel createStatusBadge(String status) {
+        JLabel label = new JLabel(status.toUpperCase());
+        label.setOpaque(true);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Arial", Font.BOLD, 10));
+        label.setBorder(new EmptyBorder(3, 8, 3, 8));
+
+        switch (status.toLowerCase()) {
+            case "pending":
+                label.setBackground(warningColor);
+                break;
+            case "approved":
+                label.setBackground(successColor);
+                break;
+            case "rejected":
+                label.setBackground(dangerColor);
+                break;
+            default:
+                label.setBackground(neutralColor);
+                break;
+        }
+        return label;
+    }
+
+    private void styleActionButton(JButton button, Color color) {
+        button.setFont(new Font("Arial", Font.BOLD, 10));
+        button.setBackground(color);
+        button.setForeground(Color.WHITE);
+        button.setOpaque(true);
+        button.setFocusPainted(false);
+        button.setBorderPainted(false);
+        button.setPreferredSize(new Dimension(80, 28));
     }
 }

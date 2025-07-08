@@ -1,8 +1,9 @@
-import javax.swing.*; 
+import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.List;
 import java.io.File;
-
 
 public class BookListScreen extends JFrame {
     private BookDAO bookDAO;
@@ -20,7 +21,7 @@ public class BookListScreen extends JFrame {
         this.favoriteDAO = new FavoriteDAO(DBConnection.getConnection());
 
         setTitle("Daftar Buku Tersedia - " + currentUser.getNama());
-        setSize(800, 600);
+        setSize(850, 600); // Sedikit diperlebar untuk tombol
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -103,7 +104,6 @@ public class BookListScreen extends JFrame {
             JLabel emptyLabel = new JLabel("Buku tidak ditemukan.", SwingConstants.CENTER);
             emptyLabel.setFont(new Font("Arial", Font.ITALIC, 16));
             emptyLabel.setForeground(new Color(107, 114, 128));
-            // Center the label inside the listPanel
             JPanel emptyPanel = new JPanel(new GridBagLayout());
             emptyPanel.setBackground(Color.WHITE);
             emptyPanel.add(emptyLabel);
@@ -119,7 +119,7 @@ public class BookListScreen extends JFrame {
      
     private JPanel createBookEntryPanel(Book book) {
         Color primaryColor = new Color(30, 58, 138); 
-        Color secondaryColor = new Color(107, 114, 128); // Abu-abu untuk favorit yg tidak aktif
+        Color secondaryColor = new Color(107, 114, 128);
         Color cardBackgroundColor = Color.WHITE;
         Color successColor = new Color(76, 175, 80); 
         Color neutralColor = new Color(107, 114, 128);
@@ -132,7 +132,6 @@ public class BookListScreen extends JFrame {
             BorderFactory.createEmptyBorder(10,10,10,10) 
         ));
         
-        // Logika Sampul/Cover
         JLabel coverLabel = new JLabel();
         coverLabel.setPreferredSize(new Dimension(50,70)); 
         coverLabel.setHorizontalAlignment(SwingConstants.CENTER);
@@ -144,16 +143,16 @@ public class BookListScreen extends JFrame {
                     ImageIcon imageIcon = new ImageIcon(book.getCoverImagePath());
                     Image image = imageIcon.getImage().getScaledInstance(50, 70, Image.SCALE_SMOOTH);
                     coverLabel.setIcon(new ImageIcon(image));
-                    coverLabel.setText(""); // Hapus teks jika gambar ada
+                    coverLabel.setText("");
                     coverLabel.setBorder(null); 
                 } else {
-                    coverLabel.setText("X"); // File tidak ditemukan
+                    coverLabel.setText("X");
                 }
             } catch (Exception e) {
-                coverLabel.setText("Err"); // Error saat load gambar
+                coverLabel.setText("Err");
             }
         } else {
-            coverLabel.setText("N/A"); // Path kosong/null
+            coverLabel.setText("N/A");
         }
         bookEntryPanel.add(coverLabel, BorderLayout.WEST);
 
@@ -169,42 +168,42 @@ public class BookListScreen extends JFrame {
         bookAuthorLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         bookAuthorLabel.setForeground(neutralColor);
         
+        JLabel bookIsbnLabel = new JLabel("ISBN: " + (book.getIsbn() != null ? book.getIsbn() : "-"));
+        bookIsbnLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        bookIsbnLabel.setForeground(neutralColor);
+        
         JLabel bookRatingLabel = new JLabel(String.format("Rating: %.1f/5.0", book.getRating()));
         bookRatingLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         bookRatingLabel.setForeground(neutralColor);
 
         bookInfoPanel.add(bookTitleLabel);
         bookInfoPanel.add(bookAuthorLabel);
+        bookInfoPanel.add(bookIsbnLabel);
         bookInfoPanel.add(bookRatingLabel);
         bookEntryPanel.add(bookInfoPanel, BorderLayout.CENTER);
         
         JPanel actionButtonsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5,0)); 
         actionButtonsPanel.setOpaque(false);
 
-        // Tombol Favorite
         JButton favoriteButton = new JButton();
-        final boolean isCurrentlyFavorite = favoriteDAO.isFavorite(currentUser.getIdUser(), book.getIdBook());
-        updateFavoriteButtonState(favoriteButton, isCurrentlyFavorite, favoriteColor, secondaryColor);
-        favoriteButton.addActionListener(e -> handleFavoriteAction(favoriteButton, book));
+        updateFavoriteButtonState(favoriteButton, favoriteDAO.isFavorite(currentUser.getIdUser(), book.getIdBook()), favoriteColor, secondaryColor);
+        favoriteButton.addActionListener(e -> handleFavoriteAction(favoriteButton, book, favoriteColor, secondaryColor));
         actionButtonsPanel.add(favoriteButton);
 
-        // Tombol Detail
         JButton previewButton = new JButton("Detail");
         styleActionButton(previewButton, primaryColor);
         previewButton.addActionListener(e -> new BookDetailScreen(book.getIdBook(), bookDAO, currentUser, favoriteDAO));
         actionButtonsPanel.add(previewButton);
 
-        // Tombol Pinjam
         JButton borrowButton = new JButton("Pinjam");
         styleActionButton(borrowButton, successColor);
         borrowButton.addActionListener(e -> handleBorrowAction(book));
         actionButtonsPanel.add(borrowButton);
         
-        // Tombol Baca
         JButton readButton = new JButton("Baca");
         styleActionButton(readButton, neutralColor);
         readButton.setEnabled(loanDAO.isLoanApproved(currentUser.getIdUser(), book.getIdBook()));
-        readButton.addActionListener(e -> handleReadAction(readButton, book));
+        readButton.addActionListener(e -> handleReadAction(book));
         actionButtonsPanel.add(readButton);
         
         bookEntryPanel.add(actionButtonsPanel, BorderLayout.EAST);
@@ -212,75 +211,64 @@ public class BookListScreen extends JFrame {
         return bookEntryPanel;
     }
 
-    private void handleFavoriteAction(JButton favoriteButton, Book book) {
-        Color favoriteColor = new Color(220, 53, 69);
-        Color notFavColor = new Color(107, 114, 128);
-        boolean isNowFavorite = favoriteDAO.isFavorite(currentUser.getIdUser(), book.getIdBook());
-        
-        if (isNowFavorite) {
-            if (favoriteDAO.removeFavorite(currentUser.getIdUser(), book.getIdBook())) {
-                JOptionPane.showMessageDialog(this, "\"" + book.getTitle() + "\" dihapus dari favorit.", "Favorit Dihapus", JOptionPane.INFORMATION_MESSAGE);
-                updateFavoriteButtonState(favoriteButton, false, favoriteColor, notFavColor);
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal menghapus dari favorit.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
+    // ✅✅✅ SEMUA METHOD HELPER DI BAWAH INI SUDAH DIKEMBALIKAN ISINYA ✅✅✅
+
+    private void handleFavoriteAction(JButton favoriteButton, Book book, Color favColor, Color notFavColor) {
+        boolean isCurrentlyFavorite = favoriteDAO.isFavorite(currentUser.getIdUser(), book.getIdBook());
+        boolean success;
+        if (isCurrentlyFavorite) {
+            success = favoriteDAO.removeFavorite(currentUser.getIdUser(), book.getIdBook());
+            if(success) JOptionPane.showMessageDialog(this, "Dihapus dari favorit.");
         } else {
-            if (favoriteDAO.addFavorite(currentUser.getIdUser(), book.getIdBook())) {
-                JOptionPane.showMessageDialog(this, "\"" + book.getTitle() + "\" ditambahkan ke favorit.", "Favorit Ditambahkan", JOptionPane.INFORMATION_MESSAGE);
-                updateFavoriteButtonState(favoriteButton, true, favoriteColor, notFavColor);
-            } else {
-                JOptionPane.showMessageDialog(this, "Gagal menambahkan ke favorit.", "Error", JOptionPane.ERROR_MESSAGE);
-            }
+            success = favoriteDAO.addFavorite(currentUser.getIdUser(), book.getIdBook());
+            if(success) JOptionPane.showMessageDialog(this, "Ditambahkan ke favorit.");
         }
-    }
-    
-    private void handleBorrowAction(Book book) {
-        if (loanDAO.addLoan(currentUser.getIdUser(), book.getIdBook())) {
-            JOptionPane.showMessageDialog(this, "Pengajuan peminjaman untuk buku \"" + book.getTitle() + "\" berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        if (success) {
+            updateFavoriteButtonState(favoriteButton, !isCurrentlyFavorite, favColor, notFavColor);
         } else {
-            JOptionPane.showMessageDialog(this, "Gagal mengajukan peminjaman. Anda mungkin sudah meminjam buku ini.", "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-    
-    private void handleReadAction(JButton readButton, Book book) {
-        if (loanDAO.isLoanApproved(currentUser.getIdUser(), book.getIdBook())) {
-            if (book.getBookFilePath() != null && !book.getBookFilePath().isEmpty()) {
-                new PdfReaderScreen(book.getBookFilePath());
-            } else {
-                JOptionPane.showMessageDialog(this, "File buku (PDF) tidak tersedia untuk buku ini.", "Info", JOptionPane.INFORMATION_MESSAGE);
-            }
-        } else {
-            JOptionPane.showMessageDialog(this, "Masa pinjam buku ini sudah habis atau peminjaman belum disetujui.", "Akses Ditolak", JOptionPane.WARNING_MESSAGE);
-            readButton.setEnabled(false);
+            JOptionPane.showMessageDialog(this, "Aksi favorit gagal.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
+    private void handleBorrowAction(Book book) {
+        boolean success = loanDAO.addLoan(currentUser.getIdUser(), book.getIdBook());
+        if (success) {
+            JOptionPane.showMessageDialog(this, "Pengajuan peminjaman untuk buku \"" + book.getTitle() + "\" berhasil!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
+        } else {
+            JOptionPane.showMessageDialog(this, "Gagal mengajukan peminjaman.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void handleReadAction(Book book) {
+        if (book.getBookFilePath() != null && !book.getBookFilePath().isEmpty()) {
+            new PdfReaderScreen(book.getBookFilePath());
+        } else {
+            JOptionPane.showMessageDialog(this, "File PDF untuk buku ini tidak ditemukan.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
 
     private void styleActionButton(JButton button, Color bgColor) {
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
-        button.setFont(new Font("Arial", Font.BOLD, 10)); 
-        button.setMargin(new Insets(4, 8, 4, 8)); 
-        button.setOpaque(true);
-        button.setBorderPainted(false);
+        button.setFont(new Font("Arial", Font.BOLD, 10));
+        button.setMargin(new Insets(4, 10, 4, 10));
     }
 
     private void updateFavoriteButtonState(JButton favButton, boolean isFavorite, Color favColor, Color notFavColor) {
         if (isFavorite) {
-            favButton.setText("❤️ Favorit"); 
-            favButton.setBackground(favColor); 
-            favButton.setToolTipText("Hapus dari daftar favorit Anda");
+            favButton.setText("Unfav");
+            favButton.setBackground(favColor);
+            favButton.setToolTipText("Hapus dari Favorit");
         } else {
-            favButton.setText("🤍 Favoritkan"); 
-            favButton.setBackground(notFavColor); 
-            favButton.setToolTipText("Tambahkan ke daftar favorit Anda");
+            favButton.setText("+ Fav");
+            favButton.setBackground(notFavColor);
+            favButton.setToolTipText("Tambah ke Favorit");
         }
         favButton.setForeground(Color.WHITE);
         favButton.setFocusPainted(false);
         favButton.setFont(new Font("Arial", Font.BOLD, 10));
-        favButton.setMargin(new Insets(4, 8, 4, 8));
-        favButton.setOpaque(true);
-        favButton.setBorderPainted(false);
+        favButton.setMargin(new Insets(4, 10, 4, 10));
+        favButton.setPreferredSize(new Dimension(65, 28));
     }
 }

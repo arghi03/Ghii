@@ -9,7 +9,6 @@ public class BookDetailScreen extends JFrame {
     private User currentUser;
     private Book currentBook;
 
-    
     private Color primaryColor = new Color(30, 58, 138);
     private Color secondaryColor = new Color(59, 130, 246);
     private Color successColor = new Color(76, 175, 80);
@@ -26,7 +25,6 @@ public class BookDetailScreen extends JFrame {
         this.currentUser = currentUser;
         this.favoriteDAO = favoriteDAO;
         this.loanDAO = new LoanDAO(DBConnection.getConnection());
-
         this.currentBook = this.bookDAO.getBookById(idBook); 
 
         if (currentBook != null) {
@@ -35,7 +33,7 @@ public class BookDetailScreen extends JFrame {
             setTitle("Detail Buku - Tidak Ditemukan");
         }
         
-        setSize(500, 700); 
+        setSize(500, 750);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
@@ -90,6 +88,8 @@ public class BookDetailScreen extends JFrame {
             
             mainPanel.add(createDetailEntry("PENULIS", currentBook.getAuthor(), detailHeaderFont, detailValueFont));
             mainPanel.add(Box.createVerticalStrut(10));
+            mainPanel.add(createDetailEntry("ISBN", currentBook.getIsbn(), detailHeaderFont, detailValueFont));
+            mainPanel.add(Box.createVerticalStrut(10));
             mainPanel.add(createDetailEntry("RATING", String.format("%.1f / 5.0", currentBook.getRating()), detailHeaderFont, detailValueFont));
             mainPanel.add(Box.createVerticalStrut(20)); 
 
@@ -105,7 +105,6 @@ public class BookDetailScreen extends JFrame {
             styleActionButton(readButton, successColor, 120, 35);
             readButton.addActionListener(e -> {
                 if (loanDAO.isLoanApproved(currentUser.getIdUser(), currentBook.getIdBook())) {
-                    // ✅ PERUBAHAN DI SINI: Memanggil PdfReaderScreen
                     new PdfReaderScreen(currentBook.getBookFilePath());
                 } else {
                     JOptionPane.showMessageDialog(this, "Anda harus meminjam buku ini dan menunggu persetujuan untuk membacanya.", "Akses Ditolak", JOptionPane.WARNING_MESSAGE);
@@ -134,9 +133,11 @@ public class BookDetailScreen extends JFrame {
         scrollPane.setBorder(BorderFactory.createEmptyBorder()); 
         add(scrollPane);
     }
+    
+    // ✅✅✅ SEMUA METHOD HELPER DI BAWAH INI SUDAH DIKEMBALIKAN ISINYA ✅✅✅
 
     private void setPlaceholderOrErrorText(JLabel label, String text) {
-        label.setText(text);
+        label.setText("<html><div style='text-align: center;'>" + text + "</div></html>");
         label.setPreferredSize(new Dimension(200, 300)); 
         label.setHorizontalAlignment(SwingConstants.CENTER);
         label.setBorder(BorderFactory.createLineBorder(Color.GRAY));

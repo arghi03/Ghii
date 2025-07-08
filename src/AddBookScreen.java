@@ -5,7 +5,7 @@ import java.awt.*;
 public class AddBookScreen extends JFrame {
     private BookDAO bookDAO;
     private User currentUser;
-    private JTextField titleField, authorField;
+    private JTextField titleField, authorField, isbnField; // ✅ FIELD BARU UNTUK ISBN
     private JSpinner ratingSpinner; 
     private JLabel coverImageLabel, bookFileLabel;
     private String coverImagePath, bookFilePath;
@@ -22,12 +22,12 @@ public class AddBookScreen extends JFrame {
         this.bookDAO = new BookDAO(DBConnection.getConnection());
 
         setTitle("Tambah Buku - " + currentUser.getNama());
-        setSize(550, 450); 
+        setSize(550, 500); // Perbesar sedikit tinggi frame untuk field baru
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
         setResizable(false);
 
-        initComponents(); // Panggil method untuk setup UI
+        initComponents();
 
         setVisible(true);
     }
@@ -64,6 +64,14 @@ public class AddBookScreen extends JFrame {
         authorField = new JTextField(20);
         gbc.gridx = 1; gbc.gridwidth = 2;
         formPanel.add(authorField, gbc);
+
+        // ✅ TAMBAHKAN INPUT FIELD UNTUK ISBN
+        gbc.gridy++;
+        gbc.gridx = 0; gbc.gridwidth = 1;
+        formPanel.add(new JLabel("ISBN:"), gbc);
+        isbnField = new JTextField(20);
+        gbc.gridx = 1; gbc.gridwidth = 2;
+        formPanel.add(isbnField, gbc);
 
         // Rating
         gbc.gridy++;
@@ -143,11 +151,13 @@ public class AddBookScreen extends JFrame {
     private void saveBook() {
         String title = titleField.getText().trim();
         String author = authorField.getText().trim();
+        String isbn = isbnField.getText().trim(); // ✅ AMBIL NILAI ISBN DARI FIELD
         double ratingValue = (Double) ratingSpinner.getValue();
         float rating = (float) ratingValue;
 
-        if (title.isEmpty() || author.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Judul dan penulis tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
+        // ✅ VALIDASI ISBN
+        if (title.isEmpty() || author.isEmpty() || isbn.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Judul, penulis, dan ISBN tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
         if (coverImagePath == null || coverImagePath.isEmpty()) {
@@ -160,12 +170,16 @@ public class AddBookScreen extends JFrame {
         }
 
         int newBookId = bookDAO.getNewBookId();
-        Book book = new Book(newBookId, title, author, coverImagePath, bookFilePath, rating);
+        // ✅ MASUKKAN ISBN SAAT MEMBUAT OBJEK BUKU BARU
+        Book book = new Book(newBookId, title, author, isbn, coverImagePath, bookFilePath, rating);
         boolean success = bookDAO.addBook(book);
+        
         if (success) {
             JOptionPane.showMessageDialog(this, "Buku '" + title + "' berhasil ditambahkan!");
+            // Bersihkan semua field
             titleField.setText("");
             authorField.setText("");
+            isbnField.setText(""); // ✅ BERSIHKAN FIELD ISBN
             ratingSpinner.setValue(0.0);
             coverImageLabel.setText("Belum dipilih");
             coverImageLabel.setForeground(neutralColor);
@@ -174,7 +188,7 @@ public class AddBookScreen extends JFrame {
             coverImagePath = null;
             bookFilePath = null;
         } else {
-            JOptionPane.showMessageDialog(this, "Gagal menambahkan buku! Cek konsol untuk detail.", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal menambahkan buku! Cek konsol untuk detail atau kemungkinan ISBN sudah ada.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
