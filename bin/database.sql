@@ -124,3 +124,7 @@ ALTER TABLE `book_suggestions`
 CHANGE `status` `status` 
 ENUM('pending', 'approved', 'rejected') 
 NOT NULL DEFAULT 'pending';
+
+ALTER TABLE `books`
+ADD `classification_code` VARCHAR(20) NULL DEFAULT NULL 
+AFTER `isbn`;

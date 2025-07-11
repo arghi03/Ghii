@@ -2,37 +2,29 @@ public class Book {
     private int idBook;
     private String title;
     private String author;
-    private String isbn; // ✅ FIELD BARU
+    private String isbn;
+    private String classificationCode; // ✅ FIELD BARU
     private String coverImagePath;  
     private String bookFilePath;    
     private float rating;           
 
-    // ✅ KONSTRUKTOR DIPERBARUI
-    public Book(int idBook, String title, String author, String isbn) {
+    // ✅ SEMUA KONSTRUKTOR DIPERBARUI
+    public Book(int idBook, String title, String author, String isbn, String classificationCode) {
         this.idBook = idBook;
         this.title = title;
         this.author = author;
         this.isbn = isbn;
+        this.classificationCode = classificationCode;
     }
 
-    // ✅ KONSTRUKTOR DIPERBARUI
-    public Book(int idBook, String title, String author, String isbn, String coverImagePath, String bookFilePath) {
-        this.idBook = idBook;
-        this.title = title;
-        this.author = author;
-        this.isbn = isbn;
+    public Book(int idBook, String title, String author, String isbn, String classificationCode, String coverImagePath, String bookFilePath) {
+        this(idBook, title, author, isbn, classificationCode); // Memanggil konstruktor di atas
         this.coverImagePath = coverImagePath;
         this.bookFilePath = bookFilePath;
     }
 
-    // ✅ KONSTRUKTOR DIPERBARUI
-    public Book(int idBook, String title, String author, String isbn, String coverImagePath, String bookFilePath, float rating) {
-        this.idBook = idBook;
-        this.title = title;
-        this.author = author;
-        this.isbn = isbn;
-        this.coverImagePath = coverImagePath;
-        this.bookFilePath = bookFilePath;
+    public Book(int idBook, String title, String author, String isbn, String classificationCode, String coverImagePath, String bookFilePath, float rating) {
+        this(idBook, title, author, isbn, classificationCode, coverImagePath, bookFilePath); // Memanggil konstruktor di atas
         this.rating = rating;
     }
 
@@ -43,10 +35,12 @@ public class Book {
     public void setTitle(String title) { this.title = title; }
     public String getAuthor() { return author; }
     public void setAuthor(String author) { this.author = author; }
-
-    // ✅ GETTER & SETTER BARU
     public String getIsbn() { return isbn; }
     public void setIsbn(String isbn) { this.isbn = isbn; }
+    
+    // ✅ GETTER & SETTER BARU
+    public String getClassificationCode() { return classificationCode; }
+    public void setClassificationCode(String classificationCode) { this.classificationCode = classificationCode; }
 
     public String getCoverImagePath() { return coverImagePath; }
     public void setCoverImagePath(String coverImagePath) { this.coverImagePath = coverImagePath; }

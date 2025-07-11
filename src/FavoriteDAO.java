@@ -22,9 +22,7 @@ public class FavoriteDAO {
             return false;
         }
         
-        // Cek dulu untuk menghindari query yang tidak perlu
         if (isFavorite(userId, bookId)) {
-            System.out.println("Buku (ID: " + bookId + ") sudah ada di favorit user (ID: " + userId + "). Dianggap sukses.");
             return true; 
         }
 
@@ -37,13 +35,9 @@ public class FavoriteDAO {
             return affectedRows > 0;
             
         } catch (SQLException e) {
-            // ✅ PERBAIKAN UTAMA DI SINI
-            // Error code 1062 adalah untuk 'Duplicate entry'
             if (e.getErrorCode() == 1062) { 
-                 System.out.println("Gagal menambahkan favorit (dicegat DB), tapi dianggap sukses karena data sudah ada.");
-                 return true; // Anggap sukses jika sudah ada
+                 return true;
             } else {
-                System.err.println("Error adding favorite: " + e.getMessage());
                 e.printStackTrace();
             }
         }
@@ -58,7 +52,6 @@ public class FavoriteDAO {
             stmt.setInt(2, bookId);
             return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
-            System.err.println("Error removing favorite: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
@@ -74,7 +67,6 @@ public class FavoriteDAO {
                 return rs.next();
             }
         } catch (SQLException e) {
-            System.err.println("Error checking if book is favorite: " + e.getMessage());
             e.printStackTrace();
         }
         return false;
@@ -84,7 +76,8 @@ public class FavoriteDAO {
         List<Book> favoriteBooks = new ArrayList<>();
         if (conn == null) return favoriteBooks;
         
-        String sql = "SELECT b.id_book, b.title, b.author, b.isbn, b.cover_image_path, b.book_file_path, b.rating " +
+        // ✅ PERUBAHAN 1: Menambahkan b.classification_code ke query
+        String sql = "SELECT b.id_book, b.title, b.author, b.isbn, b.classification_code, b.cover_image_path, b.book_file_path, b.rating " +
                      "FROM favorites f " +
                      "JOIN books b ON f.id_book = b.id_book " +
                      "WHERE f.id_user = ? " +
@@ -94,11 +87,14 @@ public class FavoriteDAO {
             stmt.setInt(1, userId);
             try (ResultSet rs = stmt.executeQuery()) {
                 while (rs.next()) {
+                   
+                    // ✅ PERUBAHAN 2: Menyesuaikan konstruktor Book
                     Book book = new Book(
                         rs.getInt("id_book"),
                         rs.getString("title"),
                         rs.getString("author"),
                         rs.getString("isbn"),
+                        rs.getString("classification_code"), // Ditambahkan
                         rs.getString("cover_image_path"),
                         rs.getString("book_file_path"),
                         rs.getFloat("rating")
@@ -107,7 +103,6 @@ public class FavoriteDAO {
                 }
             }
         } catch (SQLException e) {
-            System.err.println("Error fetching user favorite books: " + e.getMessage());
             e.printStackTrace();
         }
         return favoriteBooks;

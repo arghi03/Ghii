@@ -21,7 +21,7 @@ public class BookListScreen extends JFrame {
         this.favoriteDAO = new FavoriteDAO(DBConnection.getConnection());
 
         setTitle("Daftar Buku Tersedia - " + currentUser.getNama());
-        setSize(850, 600); // Sedikit diperlebar untuk tombol
+        setSize(850, 600);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setLocationRelativeTo(null);
 
@@ -171,6 +171,10 @@ public class BookListScreen extends JFrame {
         JLabel bookIsbnLabel = new JLabel("ISBN: " + (book.getIsbn() != null ? book.getIsbn() : "-"));
         bookIsbnLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         bookIsbnLabel.setForeground(neutralColor);
+
+        JLabel classificationLabel = new JLabel("Klasifikasi: " + (book.getClassificationCode() != null ? book.getClassificationCode() : "-"));
+        classificationLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        classificationLabel.setForeground(neutralColor);
         
         JLabel bookRatingLabel = new JLabel(String.format("Rating: %.1f/5.0", book.getRating()));
         bookRatingLabel.setFont(new Font("Arial", Font.PLAIN, 12));
@@ -179,6 +183,7 @@ public class BookListScreen extends JFrame {
         bookInfoPanel.add(bookTitleLabel);
         bookInfoPanel.add(bookAuthorLabel);
         bookInfoPanel.add(bookIsbnLabel);
+        bookInfoPanel.add(classificationLabel);
         bookInfoPanel.add(bookRatingLabel);
         bookEntryPanel.add(bookInfoPanel, BorderLayout.CENTER);
         
@@ -210,8 +215,6 @@ public class BookListScreen extends JFrame {
         
         return bookEntryPanel;
     }
-
-    // ✅✅✅ SEMUA METHOD HELPER DI BAWAH INI SUDAH DIKEMBALIKAN ISINYA ✅✅✅
 
     private void handleFavoriteAction(JButton favoriteButton, Book book, Color favColor, Color notFavColor) {
         boolean isCurrentlyFavorite = favoriteDAO.isFavorite(currentUser.getIdUser(), book.getIdBook());

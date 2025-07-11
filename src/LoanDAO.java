@@ -146,11 +146,13 @@ public class LoanDAO {
             stmt.setInt(1, userId);
             ResultSet rs = stmt.executeQuery();
             if (rs.next()) {
+                // ✅ SATU-SATUNYA PERUBAHAN DI FILE INI
                 return new Book(
                     rs.getInt("id_book"),
                     rs.getString("title"),
                     rs.getString("author"),
                     rs.getString("isbn"),
+                    rs.getString("classification_code"), // Ditambahkan
                     rs.getString("cover_image_path"),
                     rs.getString("book_file_path"),
                     rs.getFloat("rating")
@@ -162,7 +164,6 @@ public class LoanDAO {
         return null;
     }
 
-    // ✅✅✅ SEMUA METHOD STATISTIK DIKEMBALIKAN ISINYA ✅✅✅
     public int getTotalLoans() {
         if (conn == null) return 0;
         String sql = "SELECT COUNT(*) AS total FROM loans";

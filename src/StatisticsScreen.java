@@ -130,7 +130,7 @@ public class StatisticsScreen extends JFrame {
         leftBottomPanel.setOpaque(false);
         JButton refreshButton = new JButton("Refresh");
         styleBottomButton(refreshButton, neutralColor.darker(), 120, 40);
-        refreshButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Data direfresh."));
+        refreshButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Data direfreshEr."));
         JButton exportPdfButton = new JButton("Ekspor ke PDF");
         styleBottomButton(exportPdfButton, new Color(200, 30, 30), 160, 40);
         exportPdfButton.addActionListener(e -> exportToPdf());
