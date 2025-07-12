@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Vector;
 
 public class EditBookScreen extends JDialog { 
-    // ... (field sama seperti AddBookScreen)
     private BookDAO bookDAO;
     private Book bookToEdit;
     private JTextField titleField, authorField, isbnField;
@@ -18,7 +17,6 @@ public class EditBookScreen extends JDialog {
     private JComboBox<ClassificationItem> subClassComboBox;
     private JTextField specificNumberField;
     
-    // ... (Palet warna tidak berubah) ...
     private Color primaryColor = new Color(30, 58, 138); 
     private Color secondaryColor = new Color(59, 130, 246);
     private Color backgroundColor = new Color(245, 245, 245); 
@@ -54,9 +52,11 @@ public class EditBookScreen extends JDialog {
         this.bookFilePath = bookToEdit.getBookFilePath();
         if (coverImagePath != null && !coverImagePath.isEmpty()) {
             coverImageLabel.setText(new File(coverImagePath).getName());
+            coverImageLabel.setForeground(Color.BLACK);
         }
         if (bookFilePath != null && !bookFilePath.isEmpty()) {
             bookFileLabel.setText(new File(bookFilePath).getName());
+            bookFileLabel.setForeground(Color.BLACK);
         }
 
         selectClassification(bookToEdit.getClassificationCode());
@@ -120,7 +120,7 @@ public class EditBookScreen extends JDialog {
         JButton chooseCoverButton = createStyledButton("Pilih Gambar...", secondaryColor, 120, 30);
         gbc.gridx = 1; gbc.gridwidth = 1;
         formPanel.add(chooseCoverButton, gbc);
-        coverImageLabel = new JLabel("Belum diubah");
+        coverImageLabel = new JLabel("Tidak diubah");
         coverImageLabel.setForeground(neutralColor);
         gbc.gridx = 2; gbc.gridwidth = 1;
         formPanel.add(coverImageLabel, gbc);
@@ -129,7 +129,7 @@ public class EditBookScreen extends JDialog {
         JButton chooseBookFileButton = createStyledButton("Pilih File PDF...", secondaryColor, 120, 30);
         gbc.gridx = 1; gbc.gridwidth = 1;
         formPanel.add(chooseBookFileButton, gbc);
-        bookFileLabel = new JLabel("Belum diubah");
+        bookFileLabel = new JLabel("Tidak diubah");
         bookFileLabel.setForeground(neutralColor);
         gbc.gridx = 2; gbc.gridwidth = 1;
         formPanel.add(bookFileLabel, gbc);
@@ -182,18 +182,17 @@ public class EditBookScreen extends JDialog {
             String specificNum = specificNumberField.getText().trim();
             if (!specificNum.isEmpty() && !specificNum.startsWith(".")) specificNum = "." + specificNum;
             classificationCode = selectedSubClass.getCode() + specificNum;
-        } else {
-            // Jika user tidak memilih ulang, gunakan kode yang ada dan tambahkan nomor spesifik jika diubah
+        } else if (bookToEdit.getClassificationCode() != null && !bookToEdit.getClassificationCode().isEmpty()) {
             classificationCode = bookToEdit.getClassificationCode();
             String specificNum = specificNumberField.getText().trim();
-            if(classificationCode != null && !classificationCode.isEmpty() && !specificNum.isEmpty()) {
+            if(!specificNum.isEmpty()) {
                  String baseCode = classificationCode.split("\\.")[0];
                  if (!specificNum.startsWith(".")) specificNum = "." + specificNum;
                  classificationCode = baseCode + specificNum;
             }
         }
 
-        if (title.isEmpty() || author.isEmpty() || isbn.isEmpty() || classificationCode == null || classificationCode.isEmpty()) {
+        if (title.isEmpty() || author.isEmpty() || isbn.isEmpty() || classificationCode.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Judul, Penulis, ISBN, dan Klasifikasi tidak boleh kosong!", "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
@@ -229,7 +228,7 @@ public class EditBookScreen extends JDialog {
                 }
             }
             
-            updateSubClassComboBox(false); // Update sub-kelas tanpa menghapus field spesifik
+            updateSubClassComboBox(false);
             
             SwingUtilities.invokeLater(() -> {
                 for (int i = 0; i < subClassComboBox.getItemCount(); i++) {
@@ -242,7 +241,7 @@ public class EditBookScreen extends JDialog {
             });
         } catch (Exception e) {
             System.err.println("Gagal mem-parsing kode klasifikasi: " + code + " - " + e.getMessage());
-            specificNumberField.setText(code); // Jika gagal, tampilkan kode mentahnya
+            specificNumberField.setText(code);
         }
     }
 
@@ -273,7 +272,6 @@ public class EditBookScreen extends JDialog {
         return button;
     }
 
-    // ✅✅✅ KELAS HELPER YANG HILANG DIKEMBALIKAN ✅✅✅
     private static class ClassificationItem {
         private String code;
         private String description;
@@ -289,7 +287,7 @@ public class EditBookScreen extends JDialog {
         
         @Override
         public String toString() {
-            if (code.isEmpty()) return description; // Untuk placeholder
+            if (code.isEmpty()) return description;
             return code + " - " + description;
         }
     }

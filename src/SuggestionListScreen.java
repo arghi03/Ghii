@@ -3,13 +3,15 @@ import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class SuggestionListScreen extends JFrame {
     private SuggestionDAO suggestionDAO;
     private User currentUser;
-    private JPanel suggestionsPanel;
+    private JPanel suggestionsPanel; 
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
@@ -86,7 +88,6 @@ public class SuggestionListScreen extends JFrame {
         suggestionsPanel.repaint();
     }
 
-    // ✅✅✅ PERUBAHAN UTAMA ADA DI DALAM METHOD INI ✅✅✅
     private JPanel createSuggestionCard(Suggestion suggestion) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
         card.setBackground(Color.WHITE);
@@ -94,26 +95,20 @@ public class SuggestionListScreen extends JFrame {
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 120));
         card.setMinimumSize(new Dimension(0, 120));
 
-        // -- Panel Kiri (Info Utama) --
         JPanel infoPanel = new JPanel();
         infoPanel.setOpaque(false);
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
         
-        // Panel untuk Judul dan Penulis
         JPanel titleAuthorPanel = new JPanel(new GridBagLayout());
         titleAuthorPanel.setOpaque(false);
         titleAuthorPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(0, 0, 2, 5); // top, left, bottom, right
-
-        // Judul
+        gbc.insets = new Insets(0, 0, 2, 5);
         gbc.gridx = 0; gbc.gridy = 0;
         JLabel titleLabel = new JLabel(suggestion.getTitle());
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         titleAuthorPanel.add(titleLabel, gbc);
-
-        // Penulis
         gbc.gridy = 1;
         String author = (suggestion.getAuthor() != null && !suggestion.getAuthor().isEmpty()) ? "oleh " + suggestion.getAuthor() : "Penulis tidak disebutkan";
         JLabel authorLabel = new JLabel(author);
@@ -121,22 +116,18 @@ public class SuggestionListScreen extends JFrame {
         authorLabel.setForeground(neutralColor);
         titleAuthorPanel.add(authorLabel, gbc);
 
-        // Panel untuk Catatan (Notes)
         JPanel notesPanel = new JPanel(new GridBagLayout());
         notesPanel.setOpaque(false);
         notesPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
         GridBagConstraints gbcNotes = new GridBagConstraints();
-        gbcNotes.anchor = GridBagConstraints.NORTHWEST; // Rata kiri atas
-
+        gbcNotes.anchor = GridBagConstraints.NORTHWEST;
         gbcNotes.gridx = 0; gbcNotes.gridy = 0;
         gbcNotes.insets = new Insets(0, 0, 0, 5);
         JLabel notesTitleLabel = new JLabel("Catatan:");
         notesTitleLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         notesTitleLabel.setForeground(neutralColor);
         notesPanel.add(notesTitleLabel, gbcNotes);
-
-        gbcNotes.gridx = 1;
-        gbcNotes.weightx = 1.0; // Agar JTextArea mengambil sisa ruang
+        gbcNotes.gridx = 1; gbcNotes.weightx = 1.0;
         gbcNotes.fill = GridBagConstraints.HORIZONTAL;
         JTextArea notesArea = new JTextArea(suggestion.getNotes().isEmpty() ? "-" : suggestion.getNotes());
         notesArea.setFont(new Font("Arial", Font.PLAIN, 12));
@@ -146,24 +137,20 @@ public class SuggestionListScreen extends JFrame {
         notesArea.setWrapStyleWord(true);
         notesPanel.add(notesArea, gbcNotes);
         
-        // Info Pengirim
         JLabel suggesterLabel = new JLabel("Disarankan oleh: " + suggestion.getUsername() + " pada " + suggestion.getCreatedAt().format(DATETIME_FORMATTER));
         suggesterLabel.setFont(new Font("Arial", Font.PLAIN, 12));
         suggesterLabel.setForeground(neutralColor);
         suggesterLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        // Menambahkan semua ke infoPanel
         infoPanel.add(titleAuthorPanel);
         infoPanel.add(Box.createVerticalStrut(8));
         infoPanel.add(notesPanel);
-        infoPanel.add(Box.createVerticalGlue()); // Mendorong info pengirim ke bawah
+        infoPanel.add(Box.createVerticalGlue());
         infoPanel.add(suggesterLabel);
 
-        // -- Panel Kanan (Status dan Aksi) --
         JPanel actionWrapperPanel = new JPanel(new BorderLayout(0, 5));
         actionWrapperPanel.setOpaque(false);
-        actionWrapperPanel.setPreferredSize(new Dimension(280, 100)); // Beri ukuran tetap
-
+        actionWrapperPanel.setPreferredSize(new Dimension(280, 100));
         JLabel statusLabel = createStatusBadge(suggestion.getStatus());
         JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
         statusPanel.setOpaque(false);
@@ -173,21 +160,22 @@ public class SuggestionListScreen extends JFrame {
         actionPanel.setOpaque(false);
         boolean isPending = suggestion.getStatus().equalsIgnoreCase("pending");
 
-        JButton approveButton = new JButton("Setujui");
-        styleActionButton(approveButton, successColor);
-        approveButton.setEnabled(isPending);
-        approveButton.addActionListener(e -> handleUpdateStatus(suggestion.getId(), "approved"));
+        // ✅✅✅ PERUBAHAN TEKS TOMBOL ✅✅✅
+        JButton prosesButton = new JButton("Proses Jadi Buku");
+        styleActionButton(prosesButton, successColor);
+        prosesButton.setEnabled(isPending);
+        prosesButton.addActionListener(e -> openAddBookFromSuggestion(suggestion));
 
         JButton rejectButton = new JButton("Tolak");
         styleActionButton(rejectButton, warningColor);
-        rejectButton.setEnabled(isPending);
+        rejectButton.setEnabled(isPending); 
         rejectButton.addActionListener(e -> handleUpdateStatus(suggestion.getId(), "rejected"));
 
         JButton deleteButton = new JButton("Hapus");
         styleActionButton(deleteButton, dangerColor);
         deleteButton.addActionListener(e -> handleDelete(suggestion.getId()));
         
-        actionPanel.add(approveButton);
+        actionPanel.add(prosesButton);
         actionPanel.add(rejectButton);
         actionPanel.add(deleteButton);
 
@@ -198,6 +186,17 @@ public class SuggestionListScreen extends JFrame {
         card.add(actionWrapperPanel, BorderLayout.EAST);
 
         return card;
+    }
+    
+    private void openAddBookFromSuggestion(Suggestion suggestion) {
+        AddBookScreen addBookDialog = new AddBookScreen(this, currentUser, suggestion);
+        addBookDialog.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosed(WindowEvent e) {
+                loadSuggestions();
+            }
+        });
+        addBookDialog.setVisible(true);
     }
 
     private void handleUpdateStatus(int suggestionId, String newStatus) {
@@ -255,7 +254,7 @@ public class SuggestionListScreen extends JFrame {
         button.setForeground(Color.WHITE);
         button.setOpaque(true);
         button.setFocusPainted(false);
-        button.setBorderPainted(false);
-        button.setPreferredSize(new Dimension(80, 28));
+        button.setBorderPainted(false); 
+        button.setPreferredSize(new Dimension(130, 28));
     }
 }

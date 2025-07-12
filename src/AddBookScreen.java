@@ -1,22 +1,25 @@
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ItemEvent;
 import java.io.File;
 import java.util.Map;
 import java.util.Vector;
+import java.awt.event.ItemEvent;
 
-public class AddBookScreen extends JFrame {
+public class AddBookScreen extends JDialog {
     private BookDAO bookDAO;
+    // SuggestionDAO tidak lagi dibutuhkan untuk proses penyimpanan
+    // private SuggestionDAO suggestionDAO; 
     private User currentUser;
     private JTextField titleField, authorField, isbnField;
     private JSpinner ratingSpinner; 
     private JLabel coverImageLabel, bookFileLabel;
     private String coverImagePath, bookFilePath;
-    
     private JComboBox<String> mainClassComboBox;
     private JComboBox<ClassificationItem> subClassComboBox;
     private JTextField specificNumberField;
+
+    private Suggestion suggestionToFulfill = null;
 
     private Color primaryColor = new Color(30, 58, 138); 
     private Color secondaryColor = new Color(59, 130, 246);
@@ -24,25 +27,45 @@ public class AddBookScreen extends JFrame {
     private Color successColor = new Color(76, 175, 80); 
     private Color neutralColor = new Color(107, 114, 128);
 
-    public AddBookScreen(User user) {
+    public AddBookScreen(Frame owner, User user) {
+        super(owner, "Tambah Buku Baru", true);
         this.currentUser = user;
-        this.bookDAO = new BookDAO(DBConnection.getConnection());
+        commonInit();
+    }
 
-        setTitle("Tambah Buku - " + currentUser.getNama());
-        setSize(550, 600); 
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(false);
-        initComponents();
-        setVisible(true);
+    public AddBookScreen(Frame owner, User user, Suggestion suggestion) {
+        super(owner, "Proses Saran & Tambah Buku", true);
+        this.currentUser = user;
+        this.suggestionToFulfill = suggestion;
+        commonInit();
+        populateFormFromSuggestion();
     }
     
+    private void commonInit() {
+        this.bookDAO = new BookDAO(DBConnection.getConnection());
+        // Inisialisasi SuggestionDAO tidak lagi diperlukan di sini
+        // this.suggestionDAO = new SuggestionDAO(DBConnection.getConnection());
+        setSize(550, 600);
+        setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(getOwner());
+        setResizable(false);
+        initComponents();
+    }
+
+    private void populateFormFromSuggestion() {
+        if (suggestionToFulfill != null) {
+            titleField.setText(suggestionToFulfill.getTitle());
+            authorField.setText(suggestionToFulfill.getAuthor());
+        }
+    }
+  
     private void initComponents() {
         JPanel mainPanel = new JPanel(new BorderLayout(10, 20));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         mainPanel.setBackground(backgroundColor);
 
-        JLabel titleLabel = new JLabel("Tambah Buku Baru", SwingConstants.CENTER);
+        String titleText = (suggestionToFulfill == null) ? "Tambah Buku Baru" : "Proses Saran Menjadi Buku";
+        JLabel titleLabel = new JLabel(titleText, SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(primaryColor);
         mainPanel.add(titleLabel, BorderLayout.NORTH);
@@ -129,7 +152,7 @@ public class AddBookScreen extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         buttonPanel.setBackground(backgroundColor);
         JButton saveButton = createStyledButton("Simpan Buku", successColor, 140, 35);
-        JButton backButton = createStyledButton("Kembali", neutralColor, 120, 35);
+        JButton backButton = createStyledButton("Batal", neutralColor, 120, 35);
         buttonPanel.add(saveButton);
         buttonPanel.add(backButton);
         mainPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -167,7 +190,9 @@ public class AddBookScreen extends JFrame {
         subClassComboBox.setEnabled(true);
     }
 
+    // ✅✅✅ METHOD PENYIMPANAN YANG SUDAH DISESUAIKAN ✅✅✅
     private void saveBook() {
+        // --- Validasi form tidak berubah ---
         String title = titleField.getText().trim();
         String author = authorField.getText().trim();
         String isbn = isbnField.getText().trim();
@@ -197,22 +222,30 @@ public class AddBookScreen extends JFrame {
             return;
         }
 
+        // --- Logika penyimpanan yang baru ---
         int newBookId = bookDAO.getNewBookId();
         Book book = new Book(newBookId, title, author, isbn, classificationCode, coverImagePath, bookFilePath, rating);
-        boolean success = bookDAO.addBook(book);
+        
+        // Menentukan suggestionId yang akan dikirim ke DAO.
+        // Jika tidak ada saran, nilainya akan 0.
+        int suggestionIdToFulfill = (suggestionToFulfill != null) ? suggestionToFulfill.getId() : 0;
+
+        // Memanggil method transaksional yang baru di BookDAO
+        boolean success = bookDAO.addBookAndFulfillSuggestion(book, suggestionIdToFulfill);
         
         if (success) {
-            JOptionPane.showMessageDialog(this, "Buku '" + title + "' berhasil ditambahkan!");
-            titleField.setText(""); authorField.setText(""); isbnField.setText("");
-            mainClassComboBox.setSelectedIndex(0); specificNumberField.setText("");
-            ratingSpinner.setValue(0.0); coverImageLabel.setText("Belum dipilih");
-            bookFileLabel.setText("Belum dipilih"); coverImagePath = null; bookFilePath = null;
+            String successMessage = "Buku '" + title + "' berhasil ditambahkan!";
+            // Menambahkan notifikasi jika proses ini juga meng-approve saran
+            if (suggestionIdToFulfill > 0) {
+                successMessage += "\nSaran dari pengguna telah di-Approved.";
+            }
+            JOptionPane.showMessageDialog(this, successMessage, "Sukses", JOptionPane.INFORMATION_MESSAGE);
+            dispose();
         } else {
-            JOptionPane.showMessageDialog(this, "Gagal menambahkan buku!", "Error", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Gagal menambahkan buku karena terjadi kesalahan pada database.", "Error Transaksi", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    // ✅✅✅ METHOD HELPER DIKEMBALIKAN ISINYA ✅✅✅
     private void chooseFile(String dialogTitle, String fileDesc, String[] extensions, JLabel label, String fileType) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(dialogTitle);

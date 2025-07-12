@@ -10,7 +10,6 @@ import java.sql.SQLException;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 
-
 public class Dashboard extends JFrame {
     private UserDAO userDAO;
     private LoanDAO loanDAO;
@@ -168,7 +167,10 @@ public class Dashboard extends JFrame {
             sidebarPanel.add(createSidebarButton("Statistik Aplikasi", createSVGIcon("icons/statistics.svg"), false, () -> new StatisticsScreen(user)));
         } 
         else if (role == 2) { // Supervisor
-            sidebarPanel.add(createSidebarButton("Tambah Buku", createSVGIcon("icons/add.svg"), false, () -> new AddBookScreen(user)));
+            // ✅✅✅ PERBAIKAN DI BARIS INI ✅✅✅
+            // Mengubah new AddBookScreen(user) menjadi new AddBookScreen(this, user)
+            sidebarPanel.add(createSidebarButton("Tambah Buku", createSVGIcon("icons/add.svg"), false, () -> new AddBookScreen(this, user)));
+            
             sidebarPanel.add(Box.createVerticalStrut(10));
             sidebarPanel.add(createSidebarButton("Kelola Peminjaman", createSVGIcon("icons/loan.svg"), false, () -> new LoanManagementScreen(user)));
             sidebarPanel.add(Box.createVerticalStrut(10));
@@ -177,8 +179,6 @@ public class Dashboard extends JFrame {
             sidebarPanel.add(createSidebarButton("Lihat Saran Buku", createSVGIcon("icons/suggestion-list.svg"), false, () -> new SuggestionListScreen(user)));
         } 
         else { // User
-            // ✅✅✅ PERUBAHAN DI BARIS INI ✅✅✅
-            // Mengubah dari memanggil SuggestionDialog menjadi SuggestionHistoryScreen
             sidebarPanel.add(createSidebarButton("Saran Buku", createSVGIcon("icons/suggestion.svg"), false, () -> new SuggestionHistoryScreen(this.user)));
         }
     }
