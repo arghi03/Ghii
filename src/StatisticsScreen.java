@@ -1,7 +1,6 @@
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
@@ -11,7 +10,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
-// Import JFreeChart
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -28,7 +26,6 @@ import org.jfree.chart.renderer.category.LineAndShapeRenderer;
 import org.jfree.data.category.DefaultCategoryDataset;
 import org.jfree.data.general.DefaultPieDataset;
 
-// Import Apache PDFBox
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -38,7 +35,6 @@ import org.apache.pdfbox.pdmodel.font.Standard14Fonts;
 import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 
-// Import Apache POI (Excel)
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellStyle;
 import org.apache.poi.ss.usermodel.Row;
@@ -47,13 +43,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFFont;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
-
-// Asumsi kelas-kelas lain sudah ada
-// ... (Kelas asumsi tetap sama)
-
-public class StatisticsScreen extends JFrame {
-
-    // ... (field dan palet warna tetap sama)
+// ✅✅✅ PERUBAHAN: extends JFrame -> extends JPanel
+public class StatisticsScreen extends JPanel {
     private User adminUser;
     private UserDAO userDAO;
     private BookDAO bookDAO;
@@ -69,90 +60,88 @@ public class StatisticsScreen extends JFrame {
     private JFreeChart barChart;
     private JFreeChart pieChart;
 
-
     public StatisticsScreen(User admin) {
-        // ... (constructor tetap sama)
         this.adminUser = admin;
         java.sql.Connection conn = DBConnection.getConnection();
         this.userDAO = new UserDAO(conn);
         this.bookDAO = new BookDAO(conn);
         this.loanDAO = new LoanDAO(conn);
-        setTitle("Statistik Aplikasi - LiteraSpace");
-        setMinimumSize(new Dimension(800, 600)); 
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
+
+        // ❌ HAPUS KODE PENGATURAN FRAME (setTitle, setSize, dll.)
+        
         initComponents();
-        pack(); 
-        setVisible(true);
+        
+        // ❌ HAPUS pack() dan setVisible(true)
     }
 
     private void initComponents() {
-        // ... (semua layout di sini tetap sama)
-        JPanel mainPanel = new JPanel(new BorderLayout(15, 15));
-        mainPanel.setBackground(backgroundColor);
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        // ✅✅✅ PERUBAHAN: Langsung atur layout untuk 'this'
+        setLayout(new BorderLayout(15, 15));
+        setBackground(backgroundColor);
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+
         JLabel titleLabel = new JLabel("Dashboard Statistik", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(primaryColor);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        add(titleLabel, BorderLayout.NORTH);
+
         JPanel contentPanel = new JPanel(new GridBagLayout());
         contentPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.BOTH;
+
         JPanel statsCardPanel = new JPanel(new GridLayout(1, 3, 15, 15));
         statsCardPanel.setOpaque(false);
         statsCardPanel.add(createStatCard("Total Pengguna", String.valueOf(userDAO.getTotalUsers()), successColor));
         statsCardPanel.add(createStatCard("Total Judul Buku", String.valueOf(bookDAO.getTotalBooksCount()), primaryColor));
         statsCardPanel.add(createStatCard("Total Peminjaman", String.valueOf(loanDAO.getTotalLoans()), warningColor));
+        
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2; gbc.weightx = 1.0; gbc.weighty = 0.0;
         contentPanel.add(statsCardPanel, gbc);
+
         this.lineChart = createLineChart();
         this.barChart = createBarChart();
         this.pieChart = createPieChart();
+
         ChartPanel lineChartPanel = new ChartPanel(this.lineChart);
         lineChartPanel.setPreferredSize(new Dimension(800, 300));
         gbc.gridy = 1; gbc.gridwidth = 2; gbc.weighty = 0.5;
         contentPanel.add(lineChartPanel, gbc);
+
         ChartPanel barChartPanel = new ChartPanel(this.barChart);
         barChartPanel.setPreferredSize(new Dimension(400, 250));
         gbc.gridy = 2; gbc.gridwidth = 1; gbc.weightx = 0.5; gbc.weighty = 0.5;
         contentPanel.add(barChartPanel, gbc);
+
         ChartPanel pieChartPanel = new ChartPanel(this.pieChart);
         pieChartPanel.setPreferredSize(new Dimension(400, 250));
         gbc.gridx = 1;
         contentPanel.add(pieChartPanel, gbc);
-        mainPanel.add(contentPanel, BorderLayout.CENTER);
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+
+        add(contentPanel, BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         bottomPanel.setOpaque(false);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(15, 0, 0, 0));
-        JPanel leftBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        leftBottomPanel.setOpaque(false);
-        JButton refreshButton = new JButton("Refresh");
-        styleBottomButton(refreshButton, neutralColor.darker(), 120, 40);
-        refreshButton.addActionListener(e -> JOptionPane.showMessageDialog(this, "Data direfreshEr."));
+        
         JButton exportPdfButton = new JButton("Ekspor ke PDF");
         styleBottomButton(exportPdfButton, new Color(200, 30, 30), 160, 40);
         exportPdfButton.addActionListener(e -> exportToPdf());
+        
         JButton exportExcelButton = new JButton("Ekspor ke Excel");
         styleBottomButton(exportExcelButton, new Color(16, 128, 64), 160, 40);
         exportExcelButton.addActionListener(e -> exportToExcel());
-        leftBottomPanel.add(refreshButton);
-        leftBottomPanel.add(exportPdfButton);
-        leftBottomPanel.add(exportExcelButton);
-        JPanel rightBottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        rightBottomPanel.setOpaque(false);
-        JButton backButton = new JButton("Kembali ke Dashboard");
-        styleBottomButton(backButton, neutralColor, 200, 40);
-        backButton.addActionListener(e -> dispose());
-        rightBottomPanel.add(backButton);
-        bottomPanel.add(leftBottomPanel, BorderLayout.WEST);
-        bottomPanel.add(rightBottomPanel, BorderLayout.EAST);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-        add(mainPanel);
+        
+        bottomPanel.add(exportPdfButton);
+        bottomPanel.add(exportExcelButton);
+        
+        // ❌ Tombol Kembali dan Refresh dihapus
+        add(bottomPanel, BorderLayout.SOUTH);
     }
     
-    // ... (method createStatCard, styleBottomButton, createBarChart, dan createLineChart tetap sama)
+    // --- Sisa method di bawah ini tidak ada perubahan ---
+    
     private JPanel createStatCard(String title, String value, Color bgColor) {
         JPanel card = new JPanel(new BorderLayout(5, 5));
         card.setBorder(BorderFactory.createEmptyBorder(10, 15, 10, 15));
@@ -211,8 +200,6 @@ public class StatisticsScreen extends JFrame {
         LineAndShapeRenderer renderer = (LineAndShapeRenderer) plot.getRenderer(); renderer.setSeriesStroke(0, new BasicStroke(2.0f)); renderer.setSeriesPaint(0, primaryColor); renderer.setSeriesShapesVisible(0, false);
         return lineChart;
     }
-
-    // ✅✅✅ PERUBAHAN HANYA DI DALAM METHOD INI ✅✅✅
     private JFreeChart createPieChart() {
         DefaultPieDataset dataset = new DefaultPieDataset();
         Map<String, Integer> statusCounts = loanDAO.getLoanStatusCounts();
@@ -237,8 +224,6 @@ public class StatisticsScreen extends JFrame {
         plot.setSectionPaint("Returned", neutralColor); 
         plot.setSectionPaint("Rejected", dangerColor);
         
-        // ✅ PERUBAHAN DI SINI: Memisahkan kurung untuk jumlah dan persen
-        // Format: {0} = Nama, {1} = Jumlah, {2} = Persen
         PieSectionLabelGenerator labelGenerator = new StandardPieSectionLabelGenerator(
             "{0} ({1}) ({2})", new DecimalFormat("0"), new DecimalFormat("0.0%")
         );
@@ -246,8 +231,6 @@ public class StatisticsScreen extends JFrame {
         
         return pieChart;
     }
-    
-    // ... (semua method ekspor dan helpernya tetap sama)
     private void exportToPdf() {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle("Simpan Laporan PDF");

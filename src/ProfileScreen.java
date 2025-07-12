@@ -1,20 +1,21 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
- 
 
-
-public class ProfileScreen extends JFrame {
+// ✅✅✅ PERUBAHAN: extends JFrame -> extends JPanel
+public class ProfileScreen extends JPanel {
     private User currentUser;
     private UserDAO userDAO; 
 
     private JLabel lblNameValue;
     private JTextField txtName, txtNim, txtEmail, txtPhone;
-    private JButton btnEdit, btnSave, btnBack;
+    private JButton btnEdit, btnSave;
+    
+    // Tombol 'Back' tidak lagi dibutuhkan
+    // private JButton btnBack;
     
     private boolean isEditMode = false;
 
-    // Palet Warna
     private Color primaryColor = new Color(30, 58, 138); 
     private Color successColor = new Color(76, 175, 80);  
     private Color secondaryColor = new Color(117, 117, 117); 
@@ -27,22 +28,19 @@ public class ProfileScreen extends JFrame {
         this.currentUser = user;
         this.userDAO = new UserDAO(DBConnection.getConnection()); 
 
-        setTitle("Profil Pengguna - " + currentUser.getNama());
-        setSize(600, 550);  
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-        setResizable(false);
+        // ❌ HAPUS KODE PENGATURAN FRAME (setTitle, setSize, dll.)
 
         initComponents();
         loadUserData(); 
 
-        setVisible(true);
+        // ❌ HAPUS setVisible(true)
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(0, 20)); 
-        mainPanel.setBackground(backgroundColor);
-        mainPanel.setBorder(new EmptyBorder(20, 20, 20, 20)); 
+        // ✅✅✅ PERUBAHAN: Langsung atur layout untuk 'this'
+        setLayout(new BorderLayout(0, 20)); 
+        setBackground(backgroundColor);
+        setBorder(new EmptyBorder(20, 20, 20, 20)); 
 
         JPanel headerPanel = createCardPanel();
         headerPanel.setLayout(new BoxLayout(headerPanel, BoxLayout.Y_AXIS));
@@ -80,31 +78,30 @@ public class ProfileScreen extends JFrame {
         infoPanel.add(Box.createRigidArea(new Dimension(0, 15)));
         infoPanel.add(createInfoPanel("ROLE", getRoleName(currentUser.getIdRole())));
  
-
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
         actionsPanel.setBackground(backgroundColor);
 
         btnEdit = createStyledButton("Edit Profil", primaryColor, 150, 40);
         btnSave = createStyledButton("Simpan", successColor, 160, 40);
         btnSave.setVisible(false);
-        btnBack = createStyledButton("Kembali", secondaryColor, 180, 40);
+        
+        // ❌ Tombol "Kembali" dihapus dari panel
+        // btnBack = createStyledButton("Kembali", secondaryColor, 180, 40);
 
         actionsPanel.add(btnEdit);
         actionsPanel.add(btnSave);
-        actionsPanel.add(btnBack);
+        // actionsPanel.add(btnBack);
         
-        mainPanel.add(headerPanel, BorderLayout.NORTH);
-        mainPanel.add(infoPanel, BorderLayout.CENTER);
-        mainPanel.add(actionsPanel, BorderLayout.SOUTH);  
-
-        add(mainPanel);
+        add(headerPanel, BorderLayout.NORTH);
+        add(infoPanel, BorderLayout.CENTER);
+        add(actionsPanel, BorderLayout.SOUTH);  
 
         btnEdit.addActionListener(e -> toggleEditMode(true));
         btnSave.addActionListener(e -> saveUserProfile());
-        btnBack.addActionListener(e -> dispose());
+        // ❌ Action listener untuk tombol kembali dihapus
+        // btnBack.addActionListener(e -> dispose());
     }
  
-
     private void toggleEditMode(boolean isEditing) {
         this.isEditMode = isEditing;
         lblNameValue.setVisible(!isEditing);
@@ -145,21 +142,25 @@ public class ProfileScreen extends JFrame {
         boolean success = userDAO.updateUser(currentUser);
         if (success) {
             JOptionPane.showMessageDialog(this, "Profil berhasil diperbarui!", "Sukses", JOptionPane.INFORMATION_MESSAGE);
-            setTitle("Profil Pengguna - " + newName); // Update window title
             loadUserData();
             toggleEditMode(false);
+            // ✅✅✅ PERUBAHAN: Update nama di dashboard jika memungkinkan
+            // Ini akan membutuhkan komunikasi kembali ke Dashboard, kita siapkan nanti
+            // Contoh: ((Dashboard) SwingUtilities.getWindowAncestor(this)).updateUserName(newName);
         } else {
             JOptionPane.showMessageDialog(this, "Gagal memperbarui profil!", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void loadUserData() {
+    public void loadUserData() {
         this.currentUser = userDAO.getUserById(currentUser.getIdUser());
-        lblNameValue.setText(currentUser.getNama());
-        txtName.setText(currentUser.getNama());
-        txtNim.setText(currentUser.getNim());
-        txtEmail.setText(currentUser.getEmail());
-        txtPhone.setText(currentUser.getNomorTelepon());
+        if (this.currentUser != null) {
+            lblNameValue.setText(currentUser.getNama());
+            txtName.setText(currentUser.getNama());
+            txtNim.setText(currentUser.getNim());
+            txtEmail.setText(currentUser.getEmail());
+            txtPhone.setText(currentUser.getNomorTelepon());
+        }
     }
 
     private String getRoleName(int idRole) {

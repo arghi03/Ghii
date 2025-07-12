@@ -1,11 +1,11 @@
 import javax.swing.*;
-import javax.swing.border.Border;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
  
-public class UserManagementScreen extends JFrame {
+// ✅✅✅ PERUBAHAN: extends JFrame -> extends JPanel
+public class UserManagementScreen extends JPanel {
     private UserDAO userDAO;
     private User adminUser;
     private JPanel userCardsPanel;
@@ -24,27 +24,25 @@ public class UserManagementScreen extends JFrame {
         this.adminUser = admin;
         this.userDAO = new UserDAO(DBConnection.getConnection());
 
-        setTitle("Manajemen Pengguna - Admin: " + adminUser.getNama());
-        setSize(950, 700);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
+        // ❌ HAPUS KODE PENGATURAN FRAME (setTitle, setSize, dll.)
 
         initComponents();
         loadAllUsers();
 
-        setVisible(true);
+        // ❌ HAPUS setVisible(true)
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(0, 20));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(backgroundColor);
+        // ✅✅✅ PERUBAHAN: Langsung atur layout untuk 'this'
+        setLayout(new BorderLayout(0, 20));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(backgroundColor);
 
         JLabel titleLabel = new JLabel("Manajemen Pengguna", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(new Color(31, 41, 55));
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0,0,20,0));
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        add(titleLabel, BorderLayout.NORTH);
         
         userCardsPanel = new JPanel();
         userCardsPanel.setLayout(new BoxLayout(userCardsPanel, BoxLayout.Y_AXIS));
@@ -55,36 +53,22 @@ public class UserManagementScreen extends JFrame {
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
         scrollPane.setBackground(backgroundColor);
         scrollPane.getViewport().setBackground(backgroundColor);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
         
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottomPanel.setOpaque(false);
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(20, 0, 0, 0));
 
         JButton refreshButton = new JButton("Refresh List");
         styleBottomButton(refreshButton, primaryColor, 140, 45);
         refreshButton.addActionListener(e -> loadAllUsers());
-
-        JButton backButton = new JButton("Back to Dashboard");
-        styleBottomButton(backButton, neutralColor, 180, 45);
-        backButton.addActionListener(e -> dispose());
-
-        JPanel leftBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 0, 0));
-        leftBottomPanel.setOpaque(false);
-        leftBottomPanel.add(refreshButton);
+        bottomPanel.add(refreshButton);
         
-        JPanel rightBottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 0, 0));
-        rightBottomPanel.setOpaque(false);
-        rightBottomPanel.add(backButton);
-        
-        bottomPanel.add(leftBottomPanel, BorderLayout.WEST);
-        bottomPanel.add(rightBottomPanel, BorderLayout.EAST);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
+        // ❌ Tombol "Back" dihapus
+        add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private void loadAllUsers() {
+    public void loadAllUsers() {
         userCardsPanel.removeAll();
         List<User> allUsers = userDAO.getAllUsers();
         
@@ -103,6 +87,7 @@ public class UserManagementScreen extends JFrame {
         userCardsPanel.repaint();
     }
 
+    // --- Sisa method lainnya tidak ada perubahan ---
     private JPanel createUserCard(User user) {
         JPanel card = new JPanel(new BorderLayout(20, 10));
         card.setBorder(BorderFactory.createCompoundBorder(

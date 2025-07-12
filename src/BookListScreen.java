@@ -5,7 +5,8 @@ import java.awt.event.ActionListener;
 import java.util.List;
 import java.io.File;
 
-public class BookListScreen extends JFrame {
+// ✅✅✅ PERUBAHAN: extends JFrame -> extends JPanel
+public class BookListScreen extends JPanel {
     private BookDAO bookDAO;
     private LoanDAO loanDAO;
     private FavoriteDAO favoriteDAO;
@@ -20,25 +21,22 @@ public class BookListScreen extends JFrame {
         this.loanDAO = new LoanDAO(DBConnection.getConnection());
         this.favoriteDAO = new FavoriteDAO(DBConnection.getConnection());
 
-        setTitle("Daftar Buku Tersedia - " + currentUser.getNama());
-        setSize(850, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
+        // ❌ HAPUS KODE PENGATURAN FRAME (setTitle, setSize, dll.)
 
         initComponents();
         displayBooks(bookDAO.getAllBooks()); 
 
-        setVisible(true);
+        // ❌ HAPUS setVisible(true)
     }
 
     private void initComponents() {
         Color primaryColor = new Color(30, 58, 138);
         Color backgroundColor = new Color(240, 242, 245);
-        Color neutralColor = new Color(107, 114, 128);
-
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        mainPanel.setBackground(backgroundColor);
+        
+        // ✅✅✅ PERUBAHAN: Tidak lagi membuat mainPanel, langsung atur layout untuk 'this'
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setBackground(backgroundColor);
 
         JPanel topPanel = new JPanel(new BorderLayout(0, 10));
         topPanel.setOpaque(false);
@@ -63,7 +61,7 @@ public class BookListScreen extends JFrame {
         searchPanel.add(searchButton, BorderLayout.EAST);
         topPanel.add(searchPanel, BorderLayout.CENTER);
 
-        mainPanel.add(topPanel, BorderLayout.NORTH);
+        add(topPanel, BorderLayout.NORTH); // Langsung add ke 'this'
 
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
@@ -72,21 +70,13 @@ public class BookListScreen extends JFrame {
 
         JScrollPane scrollPane = new JScrollPane(listPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER); // Langsung add ke 'this'
 
-        JButton backButton = new JButton("Kembali ke Dashboard");
-        backButton.setBackground(neutralColor);
-        backButton.setForeground(Color.WHITE);
-        backButton.setPreferredSize(new Dimension(200, 35));
-        backButton.addActionListener(e -> dispose());
-        
-        JPanel bottomButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
-        bottomButtonPanel.setBackground(backgroundColor);
-        bottomButtonPanel.add(backButton);
-        mainPanel.add(bottomButtonPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
+        // ❌ HAPUS Tombol "Kembali" dan panelnya karena tidak dibutuhkan lagi
     }
+
+    // --- Sisa method di bawah ini tidak ada perubahan signifikan ---
+    // (handleBorrowAction, handleFavoriteAction, dll. tetap sama)
 
     private void performSearch() {
         String keyword = searchField.getText().trim();
@@ -97,7 +87,7 @@ public class BookListScreen extends JFrame {
         }
     }
 
-    private void displayBooks(List<Book> books) {
+    public void displayBooks(List<Book> books) {
         listPanel.removeAll(); 
 
         if (books == null || books.isEmpty()) {

@@ -8,14 +8,15 @@ import java.awt.event.WindowEvent;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class SuggestionListScreen extends JFrame {
+// ✅✅✅ PERUBAHAN UTAMA: DARI extends JFrame MENJADI extends JPanel ✅✅✅
+public class SuggestionListScreen extends JPanel {
     private SuggestionDAO suggestionDAO;
     private User currentUser;
     private JPanel suggestionsPanel; 
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-    // Palet Warna
+    // Palet Warna (tetap sama)
     private final Color primaryColor = new Color(30, 58, 138); 
     private final Color successColor = new Color(22, 163, 74);
     private final Color dangerColor = new Color(220, 38, 38);
@@ -27,27 +28,29 @@ public class SuggestionListScreen extends JFrame {
     public SuggestionListScreen(User user) {
         this.currentUser = user;
         this.suggestionDAO = new SuggestionDAO(DBConnection.getConnection());
+        
+        // ❌ HAPUS SEMUA KODE PENGATURAN FRAME ❌
+        // setTitle(...)
+        // setSize(...)
+        // setDefaultCloseOperation(...)
+        // setLocationRelativeTo(...)
+        // setVisible(...)
 
-        setTitle("Daftar Saran Buku - " + currentUser.getNama());
-        setSize(1000, 700);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-
+        // Langsung panggil initComponents untuk membangun panel ini
         initComponents();
         loadSuggestions();
-
-        setVisible(true);
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 20));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(backgroundColor);
+        // Karena class ini adalah JPanel, kita langsung atur layout-nya
+        setLayout(new BorderLayout(10, 20));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(backgroundColor);
 
         JLabel titleLabel = new JLabel("Daftar Saran Buku dari Pengguna", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(primaryColor);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        add(titleLabel, BorderLayout.NORTH); // Langsung add ke 'this'
 
         suggestionsPanel = new JPanel();
         suggestionsPanel.setLayout(new BoxLayout(suggestionsPanel, BoxLayout.Y_AXIS));
@@ -57,19 +60,14 @@ public class SuggestionListScreen extends JFrame {
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
 
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        bottomPanel.setBackground(backgroundColor);
-        JButton backButton = new JButton("Kembali ke Dashboard");
-        backButton.addActionListener(e -> dispose());
-        bottomPanel.add(backButton);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
+        add(scrollPane, BorderLayout.CENTER); // Langsung add ke 'this'
+        
+        // Tombol 'Kembali' tidak lagi relevan di sini karena kita tidak pindah window
+        // Jika butuh, bisa ditambahkan kembali di Dashboard utama
     }
 
-    private void loadSuggestions() {
+    // Method loadSuggestions tidak perlu diubah
+    public void loadSuggestions() {
         suggestionsPanel.removeAll();
         List<Suggestion> suggestions = suggestionDAO.getAllSuggestions();
 
@@ -88,6 +86,7 @@ public class SuggestionListScreen extends JFrame {
         suggestionsPanel.repaint();
     }
 
+    // Method createSuggestionCard tidak perlu diubah
     private JPanel createSuggestionCard(Suggestion suggestion) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
         card.setBackground(Color.WHITE);
@@ -160,7 +159,6 @@ public class SuggestionListScreen extends JFrame {
         actionPanel.setOpaque(false);
         boolean isPending = suggestion.getStatus().equalsIgnoreCase("pending");
 
-        // ✅✅✅ PERUBAHAN TEKS TOMBOL ✅✅✅
         JButton prosesButton = new JButton("Proses Jadi Buku");
         styleActionButton(prosesButton, successColor);
         prosesButton.setEnabled(isPending);
@@ -188,19 +186,23 @@ public class SuggestionListScreen extends JFrame {
         return card;
     }
     
+    // Method ini sekarang butuh Frame owner untuk JDialog
     private void openAddBookFromSuggestion(Suggestion suggestion) {
-        AddBookScreen addBookDialog = new AddBookScreen(this, currentUser, suggestion);
+        // Kita butuh cara untuk mendapatkan frame utama (Dashboard)
+        Window topFrame = SwingUtilities.getWindowAncestor(this);
+        AddBookScreen addBookDialog = new AddBookScreen((Frame) topFrame, currentUser, suggestion);
         addBookDialog.addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosed(WindowEvent e) {
-                loadSuggestions();
+                loadSuggestions(); // Refresh list setelah dialog ditutup
             }
         });
         addBookDialog.setVisible(true);
     }
 
+    // Method lainnya tidak berubah, hanya perlu 'this' sebagai parent untuk JOptionPane
     private void handleUpdateStatus(int suggestionId, String newStatus) {
-        String action = newStatus.equals("approved") ? "menyetujui" : "menolak";
+        String action = newStatus.equals("rejected") ? "menolak" : "menyetujui";
         int confirm = JOptionPane.showConfirmDialog(this, "Anda yakin ingin " + action + " saran ini?", "Konfirmasi", JOptionPane.YES_NO_OPTION);
         if (confirm == JOptionPane.YES_OPTION) {
             if (suggestionDAO.updateSuggestionStatus(suggestionId, newStatus)) {
@@ -254,7 +256,7 @@ public class SuggestionListScreen extends JFrame {
         button.setForeground(Color.WHITE);
         button.setOpaque(true);
         button.setFocusPainted(false);
-        button.setBorderPainted(false); 
+        button.setBorderPainted(false);
         button.setPreferredSize(new Dimension(130, 28));
     }
 }

@@ -1,4 +1,4 @@
-import javax.swing.*; 
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
@@ -7,14 +7,36 @@ import java.io.File;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import com.formdev.flatlaf.FlatClientProperties;
 import com.formdev.flatlaf.extras.FlatSVGIcon;
 
 public class Dashboard extends JFrame {
     private UserDAO userDAO;
     private LoanDAO loanDAO;
+    private BookDAO bookDAO; // Pastikan ini ada
     private User user;
     private JTextField searchField;
+
+    // Manajer layout dan panel utama yang menampung semua halaman
+    private JPanel mainCardPanel;
+    private CardLayout cardLayout;
+    
+    // Tombol-tombol sidebar disimpan dalam list untuk di-update
+    private List<JButton> sidebarButtons = new ArrayList<>();
+
+    // Deklarasi semua panel halaman sebagai properti class
+    private ProfileScreen profilePanel;
+    private LoanHistoryScreen loanHistoryPanel;
+    private BookListScreen bookListPanel;
+    private MyFavoritesScreen favoritesPanel;
+    private SuggestionHistoryScreen suggestionHistoryPanel;
+    private UserManagementScreen userManagementPanel;
+    private LoanManagementScreen loanManagementPanel;
+    private BookManagementScreen bookManagementPanel;
+    private SuggestionListScreen suggestionListPanel;
+    private StatisticsScreen statisticsPanel;
 
     public Dashboard(String nama, String email, int idRole) {
         Connection conn = null;
@@ -23,6 +45,7 @@ public class Dashboard extends JFrame {
             if (conn == null) { throw new SQLException("Koneksi DB gagal."); }
             userDAO = new UserDAO(conn);
             loanDAO = new LoanDAO(conn);
+            bookDAO = new BookDAO(conn); // Pastikan ini diinisialisasi
             this.user = userDAO.getUserByNameAndEmail(nama, email);
             if (this.user == null) { throw new Exception("User tidak ditemukan."); }
         } catch (Exception e) {
@@ -46,17 +69,188 @@ public class Dashboard extends JFrame {
         JPanel mainContainer = new JPanel(new BorderLayout());
         mainContainer.setBackground(new Color(242, 237, 232));
         mainContainer.add(createHeaderPanel(), BorderLayout.NORTH);
+        
         JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.setOpaque(false);
         contentPanel.add(createSidebarPanel(), BorderLayout.WEST);
-        JScrollPane mainContentScrollPane = new JScrollPane(createMainContentPanel());
-        mainContentScrollPane.setBorder(null);
-        mainContentScrollPane.getViewport().setBackground(new Color(242, 237, 232));
-        contentPanel.add(mainContentScrollPane, BorderLayout.CENTER);
+
+        // Inisialisasi CardLayout dan panel utama
+        cardLayout = new CardLayout();
+        mainCardPanel = new JPanel(cardLayout);
+        mainCardPanel.setOpaque(false);
+
+        // Buat instance dari semua panel halaman SEKALI SAJA
+        instantiateAllPanels();
+
+        // Tambahkan semua panel sebagai "kartu" ke mainCardPanel
+        addPanelsToCardLayout();
+        
+        contentPanel.add(mainCardPanel, BorderLayout.CENTER);
         mainContainer.add(contentPanel, BorderLayout.CENTER);
         add(mainContainer);
     }
 
+    private void instantiateAllPanels() {
+    profilePanel = new ProfileScreen(this.user);
+    loanHistoryPanel = new LoanHistoryScreen(this.user);
+    bookListPanel = new BookListScreen(this.user);
+    favoritesPanel = new MyFavoritesScreen(this.user);
+    suggestionHistoryPanel = new SuggestionHistoryScreen(this.user);
+    userManagementPanel = new UserManagementScreen(this.user);
+    loanManagementPanel = new LoanManagementScreen(this.user);
+    bookManagementPanel = new BookManagementScreen(this.user);
+    suggestionListPanel = new SuggestionListScreen(this.user);
+    statisticsPanel = new StatisticsScreen(this.user);
+    }
+
+    private void addPanelsToCardLayout() {
+    mainCardPanel.add(createMainContentPanel(), "DASHBOARD_HOME");
+    mainCardPanel.add(profilePanel, "PROFILE");
+    mainCardPanel.add(loanHistoryPanel, "LOAN_HISTORY");
+    mainCardPanel.add(bookListPanel, "BOOK_LIST");
+    mainCardPanel.add(favoritesPanel, "FAVORITES");
+    mainCardPanel.add(suggestionHistoryPanel, "SUGGESTION_HISTORY");
+    mainCardPanel.add(userManagementPanel, "USER_MANAGEMENT");
+    mainCardPanel.add(loanManagementPanel, "LOAN_MANAGEMENT");
+    mainCardPanel.add(bookManagementPanel, "BOOK_MANAGEMENT");
+    mainCardPanel.add(suggestionListPanel, "SUGGESTION_LIST");
+    mainCardPanel.add(statisticsPanel, "STATISTICS");
+    }
+
+    private void showPanel(String panelName, JButton clickedButton) {
+        // Update tampilan semua tombol sidebar
+        for (JButton btn : sidebarButtons) {
+            btn.setBackground(new Color(242, 237, 232));
+            btn.setForeground(new Color(80, 80, 80));
+        }
+        // "Nyalakan" tombol yang baru diklik
+        clickedButton.setBackground(new Color(72, 191, 172));
+        clickedButton.setForeground(Color.WHITE);
+
+        // Refresh data pada panel yang akan ditampilkan (jika perlu)
+        switch(panelName) {
+            case "LOAN_HISTORY": loanHistoryPanel.loadLoanHistory(); break;
+            case "BOOK_LIST": bookListPanel.displayBooks(bookDAO.getAllBooks()); break;
+            case "FAVORITES": favoritesPanel.loadFavoriteBooks(); break;
+            case "SUGGESTION_HISTORY": suggestionHistoryPanel.loadUserSuggestions(); break;
+            case "USER_MANAGEMENT": userManagementPanel.loadAllUsers(); break;
+            case "LOAN_MANAGEMENT": loanManagementPanel.loadPendingLoans(); break;
+            case "BOOK_MANAGEMENT": bookManagementPanel.loadAllBooks(); break;
+            case "SUGGESTION_LIST": suggestionListPanel.loadSuggestions(); break;
+            case "PROFILE": profilePanel.loadUserData(); break;
+        }
+        cardLayout.show(mainCardPanel, panelName);
+    }
+
+    private JPanel createSidebarPanel() { 
+        JPanel sidebarPanel = new JPanel();
+        sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
+        sidebarPanel.setBackground(new Color(242, 237, 232));
+        sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 10));
+        sidebarPanel.setPreferredSize(new Dimension(240, 0));
+        
+        // ✅✅✅ UBAH SEMUA AKSI TOMBOL UNTUK MEMANGGIL showPanel() ✅✅✅
+        addSidebarButton(sidebarPanel, "Dashboard", "icons/dashboard.svg", true, "DASHBOARD_HOME");
+        addSidebarButton(sidebarPanel, "Profile", "icons/profile.svg", false, "PROFILE");
+        addSidebarButton(sidebarPanel, "Book History", "icons/history.svg", false, "LOAN_HISTORY");
+        addSidebarButton(sidebarPanel, "Library Catalog", "icons/booklist.svg", false, "BOOK_LIST");
+        addSidebarButton(sidebarPanel, "Favorite Book", "icons/favoritebook.svg", false, "FAVORITES");
+        
+        addRoleSpecificButtons(sidebarPanel);
+        
+        sidebarPanel.add(Box.createVerticalGlue());
+        
+        JButton logoutButton = createSidebarButton("Logout", createSVGIcon("icons/logout.svg"), false, null);
+        logoutButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this, "Anda yakin ingin logout?", "Konfirmasi Logout", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                dispose();
+                new Login().setVisible(true);
+            }
+        });
+        sidebarPanel.add(logoutButton);
+
+        return sidebarPanel;
+    }
+    
+    private void addRoleSpecificButtons(JPanel sidebarPanel) { 
+        int role = user.getIdRole();
+        
+        if (role == 1) { // Admin
+            addSidebarButton(sidebarPanel, "Manajemen User", "icons/users.svg", false, "USER_MANAGEMENT");
+            addSidebarButton(sidebarPanel, "Lihat Saran Buku", "icons/suggestion-list.svg", false, "SUGGESTION_LIST");
+            addSidebarButton(sidebarPanel, "Statistik Aplikasi", "icons/statistics.svg", false, "STATISTICS");
+        } 
+        else if (role == 2) { // Supervisor
+            JButton addBookBtn = createSidebarButton("Tambah Buku", createSVGIcon("icons/add.svg"), false, null);
+            addBookBtn.addActionListener(e -> new AddBookScreen(this, user).setVisible(true));
+            sidebarPanel.add(addBookBtn);
+            sidebarPanel.add(Box.createVerticalStrut(10));
+
+            addSidebarButton(sidebarPanel, "Kelola Peminjaman", "icons/loan.svg", false, "LOAN_MANAGEMENT");
+            addSidebarButton(sidebarPanel, "Kelola Buku", "icons/book-management.svg", false, "BOOK_MANAGEMENT");
+            addSidebarButton(sidebarPanel, "Lihat Saran Buku", "icons/suggestion-list.svg", false, "SUGGESTION_LIST");
+        } 
+        else { // User
+            addSidebarButton(sidebarPanel, "Saran Buku", "icons/suggestion.svg", false, "SUGGESTION_HISTORY");
+        }
+    }
+
+    private void addSidebarButton(JPanel panel, String text, String iconPath, boolean isActive, String panelName) {
+        JButton button = createSidebarButton(text, createSVGIcon(iconPath), isActive, panelName);
+        panel.add(button);
+        panel.add(Box.createVerticalStrut(10));
+        sidebarButtons.add(button); // Tambahkan ke list untuk manajemen state
+    }
+
+    private JButton createSidebarButton(String text, Icon icon, boolean isActive, String panelName) { 
+        JButton button = new JButton(text) {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(getBackground());
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
+                g2.dispose();
+                super.paintComponent(g);
+            }
+        };
+
+        button.setIcon(icon);
+        button.setIconTextGap(15);
+        button.setFont(new Font("Arial", Font.BOLD, 14));
+        button.setForeground(isActive ? Color.WHITE : new Color(80, 80, 80));
+        button.setBackground(isActive ? new Color(72, 191, 172) : new Color(242, 237, 232));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
+        
+        button.setFocusPainted(false);
+        button.setContentAreaFilled(false);
+        button.setBorderPainted(false);
+        button.setCursor(new Cursor(Cursor.HAND_CURSOR));
+
+        if (panelName != null) {
+            button.addActionListener(e -> showPanel(panelName, (JButton)e.getSource()));
+        }
+
+        Color originalBg = new Color(242, 237, 232);
+        Color hoverBg = new Color(225, 220, 215);
+        Color activeBg = new Color(72, 191, 172);
+
+        button.addMouseListener(new MouseAdapter() {
+            @Override public void mouseEntered(MouseEvent e) { 
+                if (!button.getBackground().equals(activeBg)) button.setBackground(hoverBg);
+            }
+            @Override public void mouseExited(MouseEvent e) { 
+                if (!button.getBackground().equals(activeBg)) button.setBackground(originalBg);
+            }
+        });
+        
+        return button;
+    }
+
+    // --- SISA METHOD DI BAWAH INI TIDAK ADA PERUBAHAN ---
     private JPanel createHeaderPanel() { 
         JPanel headerPanel = new JPanel(new BorderLayout(20, 0));
         headerPanel.setBackground(Color.WHITE);
@@ -120,114 +314,11 @@ public class Dashboard extends JFrame {
         accountPanel.add(accountLabel);
         accountPanel.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) { new ProfileScreen(user); }
+            public void mouseClicked(MouseEvent e) { showPanel("PROFILE", (JButton)sidebarButtons.get(1)); }
         });
         return accountPanel;
     }
-
-    private JPanel createSidebarPanel() { 
-        JPanel sidebarPanel = new JPanel();
-        sidebarPanel.setLayout(new BoxLayout(sidebarPanel, BoxLayout.Y_AXIS));
-        sidebarPanel.setBackground(new Color(242, 237, 232));
-        sidebarPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 10));
-        sidebarPanel.setPreferredSize(new Dimension(240, 0));
-        
-        sidebarPanel.add(createSidebarButton("Dashboard", createSVGIcon("icons/dashboard.svg"), true, null));
-        sidebarPanel.add(Box.createVerticalStrut(10));
-        sidebarPanel.add(createSidebarButton("Profile", createSVGIcon("icons/profile.svg"), false, () -> new ProfileScreen(this.user)));
-        sidebarPanel.add(Box.createVerticalStrut(10));
-        sidebarPanel.add(createSidebarButton("Book History", createSVGIcon("icons/history.svg"), false, () -> new LoanHistoryScreen(this.user)));
-        sidebarPanel.add(Box.createVerticalStrut(10));
-        sidebarPanel.add(createSidebarButton("Library Catalog", createSVGIcon("icons/booklist.svg"), false, () -> new BookListScreen(user)));
-        sidebarPanel.add(Box.createVerticalStrut(10));
-        sidebarPanel.add(createSidebarButton("Favorite Book", createSVGIcon("icons/favoritebook.svg"), false, () -> new MyFavoritesScreen(this.user)));
-        
-        addRoleSpecificButtons(sidebarPanel);
-        
-        sidebarPanel.add(Box.createVerticalGlue());
-        sidebarPanel.add(createSidebarButton("Logout", createSVGIcon("icons/logout.svg"), false, () -> {
-            int confirm = JOptionPane.showConfirmDialog(this, "Anda yakin ingin logout?", "Konfirmasi Logout", JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                dispose();
-                new Login().setVisible(true);
-            }
-        }));
-        return sidebarPanel;
-    }
     
-    private void addRoleSpecificButtons(JPanel sidebarPanel) { 
-        sidebarPanel.add(Box.createVerticalStrut(10));
-        int role = user.getIdRole();
-        
-        if (role == 1) { // Admin
-            sidebarPanel.add(createSidebarButton("Manajemen User", createSVGIcon("icons/users.svg"), false, () -> new UserManagementScreen(user)));
-            sidebarPanel.add(Box.createVerticalStrut(10));
-            sidebarPanel.add(createSidebarButton("Lihat Saran Buku", createSVGIcon("icons/suggestion-list.svg"), false, () -> new SuggestionListScreen(user)));
-            sidebarPanel.add(Box.createVerticalStrut(10));
-            sidebarPanel.add(createSidebarButton("Statistik Aplikasi", createSVGIcon("icons/statistics.svg"), false, () -> new StatisticsScreen(user)));
-        } 
-        else if (role == 2) { // Supervisor
-            // ✅✅✅ PERBAIKAN DI BARIS INI ✅✅✅
-            // Mengubah new AddBookScreen(user) menjadi new AddBookScreen(this, user)
-            sidebarPanel.add(createSidebarButton("Tambah Buku", createSVGIcon("icons/add.svg"), false, () -> new AddBookScreen(this, user)));
-            
-            sidebarPanel.add(Box.createVerticalStrut(10));
-            sidebarPanel.add(createSidebarButton("Kelola Peminjaman", createSVGIcon("icons/loan.svg"), false, () -> new LoanManagementScreen(user)));
-            sidebarPanel.add(Box.createVerticalStrut(10));
-            sidebarPanel.add(createSidebarButton("Kelola Buku", createSVGIcon("icons/book-management.svg"), false, () -> new BookManagementScreen(user)));
-            sidebarPanel.add(Box.createVerticalStrut(10));
-            sidebarPanel.add(createSidebarButton("Lihat Saran Buku", createSVGIcon("icons/suggestion-list.svg"), false, () -> new SuggestionListScreen(user)));
-        } 
-        else { // User
-            sidebarPanel.add(createSidebarButton("Saran Buku", createSVGIcon("icons/suggestion.svg"), false, () -> new SuggestionHistoryScreen(this.user)));
-        }
-    }
-
-    private JButton createSidebarButton(String text, Icon icon, boolean isActive, Runnable action) { 
-        JButton button = new JButton(text) {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                if(getModel().isArmed()) {
-                    g2.setColor(getBackground().darker());
-                } else {
-                    g2.setColor(getBackground());
-                }
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 15, 15);
-                g2.dispose();
-                super.paintComponent(g);
-            }
-        };
-
-        button.setIcon(icon);
-        button.setIconTextGap(15);
-        button.setFont(new Font("Arial", Font.BOLD, 14));
-        button.setForeground(isActive ? Color.WHITE : new Color(80, 80, 80));
-        button.setBackground(isActive ? new Color(72, 191, 172) : new Color(242, 237, 232));
-        button.setHorizontalAlignment(SwingConstants.LEFT);
-        button.setBorder(BorderFactory.createEmptyBorder(12, 20, 12, 20));
-        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 45));
-        
-        button.setFocusPainted(false);
-        button.setContentAreaFilled(false);
-        button.setBorderPainted(false);
-
-        if (action != null) {
-            button.setCursor(new Cursor(Cursor.HAND_CURSOR));
-            button.addActionListener(e -> action.run());
-            if (!isActive) {
-                Color originalBg = button.getBackground();
-                Color hoverBg = new Color(225, 220, 215);
-                button.addMouseListener(new MouseAdapter() {
-                    @Override public void mouseEntered(MouseEvent e) { button.setBackground(hoverBg); }
-                    @Override public void mouseExited(MouseEvent e) { button.setBackground(originalBg); }
-                });
-            }
-        }
-        return button;
-    }
-
     private JPanel createMainContentPanel() { 
         JPanel panel = new JPanel(new BorderLayout(0, 20));
         panel.setOpaque(false);
@@ -371,7 +462,8 @@ public class Dashboard extends JFrame {
             JOptionPane.showMessageDialog(this, "Info", "Masukkan kata kunci pencarian.", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
-        new BookListScreen(this.user);
+        bookListPanel.displayBooks(bookDAO.searchBooks(keyword));
+        showPanel("BOOK_LIST", (JButton)sidebarButtons.get(3));
     }
     
     private Icon createSVGIcon(String path, int width, int height) {

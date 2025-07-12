@@ -6,15 +6,15 @@ import java.awt.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-public class SuggestionHistoryScreen extends JFrame {
+public class SuggestionHistoryScreen extends JPanel {
     private SuggestionDAO suggestionDAO;
     private User currentUser;
     private JPanel suggestionsPanel;
-    private JDialog suggestionDialog; // Untuk mereferensikan dialog
+    // Kita tidak lagi butuh variabel untuk tombol atau dialog
 
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm");
 
-    // Palet Warna
+    // Palet warna tetap sama
     private final Color primaryColor = new Color(30, 58, 138); 
     private final Color successColor = new Color(22, 163, 74);
     private final Color dangerColor = new Color(220, 38, 38);
@@ -26,27 +26,19 @@ public class SuggestionHistoryScreen extends JFrame {
     public SuggestionHistoryScreen(User user) {
         this.currentUser = user;
         this.suggestionDAO = new SuggestionDAO(DBConnection.getConnection());
-
-        setTitle("Riwayat Saran Buku Saya");
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
-
         initComponents();
         loadUserSuggestions();
-
-        setVisible(true);
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 20));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
-        mainPanel.setBackground(backgroundColor);
+        setLayout(new BorderLayout(10, 20));
+        setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
+        setBackground(backgroundColor);
 
         JLabel titleLabel = new JLabel("Riwayat Saran Saya", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 24));
         titleLabel.setForeground(primaryColor);
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        add(titleLabel, BorderLayout.NORTH);
 
         suggestionsPanel = new JPanel();
         suggestionsPanel.setLayout(new BoxLayout(suggestionsPanel, BoxLayout.Y_AXIS));
@@ -55,37 +47,21 @@ public class SuggestionHistoryScreen extends JFrame {
         JScrollPane scrollPane = new JScrollPane(suggestionsPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
         scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        add(scrollPane, BorderLayout.CENTER);
 
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
-
-        // Panel Tombol Bawah
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottomPanel.setBackground(backgroundColor);
 
         JButton newSuggestionButton = new JButton("Buat Saran Baru");
         newSuggestionButton.addActionListener(e -> openSuggestionDialog());
-
-        JButton backButton = new JButton("Kembali ke Dashboard");
-        backButton.addActionListener(e -> dispose());
+        bottomPanel.add(newSuggestionButton);
         
-        JPanel leftPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        leftPanel.setOpaque(false);
-        leftPanel.add(newSuggestionButton);
-        
-        JPanel rightPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        rightPanel.setOpaque(false);
-        rightPanel.add(backButton);
-
-        bottomPanel.add(leftPanel, BorderLayout.WEST);
-        bottomPanel.add(rightPanel, BorderLayout.EAST);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
+        add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private void loadUserSuggestions() {
+    public void loadUserSuggestions() {
+        // Method ini tidak berubah
         suggestionsPanel.removeAll();
-        // Memanggil method DAO yang baru kita buat
         List<Suggestion> suggestions = suggestionDAO.getSuggestionsByUser(currentUser.getIdUser());
 
         if (suggestions.isEmpty()) {
@@ -103,24 +79,66 @@ public class SuggestionHistoryScreen extends JFrame {
         suggestionsPanel.repaint();
     }
     
+    // ✅✅✅ PERUBAHAN TOTAL DI SINI (PENDEKATAN BARU) ✅✅✅
     private void openSuggestionDialog() {
-        // Cek jika dialog sudah ada dan terlihat, jangan buat baru
-        if (suggestionDialog != null && suggestionDialog.isVisible()) {
-            suggestionDialog.toFront();
-            return;
-        }
-        // Buat dialog baru dan tambahkan window listener
-        suggestionDialog = new SuggestionDialog(this, currentUser);
-        suggestionDialog.addWindowListener(new java.awt.event.WindowAdapter() {
-            @Override
-            public void windowClosed(java.awt.event.WindowEvent windowEvent) {
-                // Refresh daftar riwayat setelah dialog ditutup
-                loadUserSuggestions();
+        // 1. Buat panel yang akan menjadi isi dari dialog
+        JPanel formPanel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JTextField titleField = new JTextField(25);
+        JTextField authorField = new JTextField(25);
+        JTextArea notesArea = new JTextArea(4, 25);
+        notesArea.setLineWrap(true);
+        notesArea.setWrapStyleWord(true);
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.WEST;
+        formPanel.add(new JLabel("Judul Buku:"), gbc);
+        gbc.gridx = 1; formPanel.add(titleField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 1;
+        formPanel.add(new JLabel("Penulis (Opsional):"), gbc);
+        gbc.gridx = 1; formPanel.add(authorField, gbc);
+
+        gbc.gridx = 0; gbc.gridy = 2;
+        formPanel.add(new JLabel("Catatan (Opsional):"), gbc);
+        gbc.gridx = 1; gbc.fill = GridBagConstraints.BOTH;
+        formPanel.add(new JScrollPane(notesArea), gbc);
+
+        // 2. Tampilkan panel form di dalam sebuah JOptionPane
+        int result = JOptionPane.showConfirmDialog(
+            this,                          // Parent component
+            formPanel,                     // Isi dialognya adalah panel kita
+            "Sarankan Buku Baru",          // Judul dialog
+            JOptionPane.OK_CANCEL_OPTION,  // Tombol OK dan Cancel
+            JOptionPane.PLAIN_MESSAGE      // Tipe dialog
+        );
+
+        // 3. Proses hasilnya HANYA jika pengguna menekan "OK"
+        if (result == JOptionPane.OK_OPTION) {
+            String title = titleField.getText().trim();
+            if (title.isEmpty()) {
+                JOptionPane.showMessageDialog(this, "Judul buku tidak boleh kosong.", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
             }
-        });
-        suggestionDialog.setVisible(true);
+
+            String author = authorField.getText().trim();
+            String notes = notesArea.getText().trim();
+
+            Suggestion newSuggestion = new Suggestion(currentUser.getIdUser(), title, author, notes);
+            SuggestionDAO suggestionDAO = new SuggestionDAO(DBConnection.getConnection());
+            
+            if (suggestionDAO.addSuggestion(newSuggestion)) {
+                JOptionPane.showMessageDialog(this, "Terima kasih! Saran Anda telah kami terima.", "Saran Terkirim", JOptionPane.INFORMATION_MESSAGE);
+                loadUserSuggestions(); // Refresh daftar setelah berhasil
+            } else {
+                JOptionPane.showMessageDialog(this, "Gagal mengirim saran. Silakan coba lagi.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 
+    // Method createHistoryCard dan createStatusBadge tidak berubah
     private JPanel createHistoryCard(Suggestion suggestion) {
         JPanel card = new JPanel(new BorderLayout(15, 0));
         card.setBackground(Color.WHITE);
@@ -128,7 +146,6 @@ public class SuggestionHistoryScreen extends JFrame {
         card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 100));
         card.setMinimumSize(new Dimension(0, 100));
 
-        // Panel Info (Judul, Penulis, Tanggal)
         JPanel infoPanel = new JPanel();
         infoPanel.setOpaque(false);
         infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
@@ -150,7 +167,6 @@ public class SuggestionHistoryScreen extends JFrame {
         infoPanel.add(Box.createVerticalGlue());
         infoPanel.add(dateLabel);
 
-        // Panel Kanan (Status)
         JPanel statusPanel = new JPanel(new GridBagLayout());
         statusPanel.setOpaque(false);
         statusPanel.add(createStatusBadge(suggestion.getStatus()));

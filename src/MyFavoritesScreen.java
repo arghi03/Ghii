@@ -3,8 +3,8 @@ import java.awt.*;
 import java.util.List;
 import java.io.File;  
 
-
-public class MyFavoritesScreen extends JFrame {
+// ✅✅✅ PERUBAHAN: extends JFrame -> extends JPanel
+public class MyFavoritesScreen extends JPanel {
     private User currentUser;
     private FavoriteDAO favoriteDAO;
     private BookDAO bookDAO; 
@@ -27,27 +27,25 @@ public class MyFavoritesScreen extends JFrame {
         this.bookDAO = new BookDAO(DBConnection.getConnection()); 
         this.loanDAO = new LoanDAO(DBConnection.getConnection()); 
 
-        setTitle("Buku Favorit Saya - " + currentUser.getNama());
-        setSize(800, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
+        // ❌ HAPUS KODE PENGATURAN FRAME (setTitle, setSize, dll.)
 
         initComponents();
         loadFavoriteBooks(); 
 
-        setVisible(true);
+        // ❌ HAPUS setVisible(true)
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        mainPanel.setBackground(backgroundColor);
+        // ✅✅✅ PERUBAHAN: Langsung atur layout untuk 'this'
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setBackground(backgroundColor);
 
         JLabel titleLabel = new JLabel("Buku Favorit Saya", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setForeground(primaryColor);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 10, 0));
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        add(titleLabel, BorderLayout.NORTH);
 
         listPanel = new JPanel();
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
@@ -56,21 +54,12 @@ public class MyFavoritesScreen extends JFrame {
         
         JScrollPane scrollPane = new JScrollPane(listPanel);
         scrollPane.setBorder(BorderFactory.createEmptyBorder());
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
 
-        JButton backButton = new JButton("Kembali ke Dashboard");
-        styleActionButton(backButton, neutralColor, 180, 35);
-        backButton.addActionListener(e -> dispose()); 
-
-        JPanel bottomButtonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 10));
-        bottomButtonPanel.setBackground(backgroundColor);
-        bottomButtonPanel.add(backButton);
-        mainPanel.add(bottomButtonPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
+        // ❌ HAPUS Tombol "Kembali" karena tidak relevan
     }
 
-    private void loadFavoriteBooks() { 
+    public void loadFavoriteBooks() { 
         listPanel.removeAll();
  
         List<Book> favoriteBooks = favoriteDAO.getUserFavoriteBooks(currentUser.getIdUser());
@@ -101,7 +90,6 @@ public class MyFavoritesScreen extends JFrame {
             BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(224, 224, 224)),
             BorderFactory.createEmptyBorder(10, 10, 10, 10)
         ));
-        
         
         JLabel coverLabel = new JLabel();
         coverLabel.setPreferredSize(new Dimension(50, 70));
@@ -168,6 +156,8 @@ public class MyFavoritesScreen extends JFrame {
         JButton detailButton = new JButton("Detail");
         styleActionButton(detailButton, primaryColor, 70, 30);
         detailButton.addActionListener(e -> {
+            // ✅✅✅ PERUBAHAN: Mendapatkan frame utama sebagai 'owner' dialog
+            Window topFrame = SwingUtilities.getWindowAncestor(this);
             new BookDetailScreen(book.getIdBook(), bookDAO, currentUser, favoriteDAO).setVisible(true);
         });
         actionButtonsPanel.add(detailButton);

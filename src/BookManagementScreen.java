@@ -9,7 +9,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.List;
 
-public class BookManagementScreen extends JFrame {
+// ✅✅✅ PERUBAHAN: extends JFrame -> extends JPanel
+public class BookManagementScreen extends JPanel {
     private BookDAO bookDAO; 
     private User currentUser; 
     private DefaultTableModel tableModel;
@@ -26,34 +27,30 @@ public class BookManagementScreen extends JFrame {
         this.currentUser = user;
         this.bookDAO = new BookDAO(DBConnection.getConnection());
 
-        setTitle("Kelola Buku - Supervisor: " + currentUser.getNama());
-        setSize(1000, 550); // Lebarkan sedikit untuk kolom baru
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-        setLocationRelativeTo(null);
+        // ❌ HAPUS KODE PENGATURAN FRAME (setTitle, setSize, dll.)
 
         initComponents();
         loadAllBooks();
 
-        setVisible(true);
+        // ❌ HAPUS setVisible(true)
     }
 
     private void initComponents() {
-        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
-        mainPanel.setBackground(backgroundColor);
+        // ✅✅✅ PERUBAHAN: Tidak lagi membuat mainPanel, langsung atur layout untuk 'this'
+        setLayout(new BorderLayout(10, 10));
+        setBorder(BorderFactory.createEmptyBorder(15, 15, 15, 15));
+        setBackground(backgroundColor);
 
         JLabel titleLabel = new JLabel("Manajemen Daftar Buku", SwingConstants.CENTER);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 20));
         titleLabel.setForeground(primaryColor);
         titleLabel.setBorder(BorderFactory.createEmptyBorder(0,0,10,0));
-        mainPanel.add(titleLabel, BorderLayout.NORTH);
+        add(titleLabel, BorderLayout.NORTH);
 
-        // ✅ TAMBAHKAN KOLOM "ISBN"
         String[] columnNames = {"ID Buku", "Judul", "Penulis", "ISBN", "Rating", "Aksi"};
         tableModel = new DefaultTableModel(columnNames, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                // Kolom aksi (terakhir) bisa diedit untuk menampilkan tombol
                 return column == 5; 
             }
         };
@@ -69,41 +66,30 @@ public class BookManagementScreen extends JFrame {
         columnModel.getColumn(0).setPreferredWidth(50);
         columnModel.getColumn(1).setPreferredWidth(280);
         columnModel.getColumn(2).setPreferredWidth(180);
-        // ✅ ATUR LEBAR KOLOM ISBN
         columnModel.getColumn(3).setPreferredWidth(120);
         columnModel.getColumn(4).setPreferredWidth(60);
         columnModel.getColumn(5).setPreferredWidth(180);
 
         ActionPanelRendererAndEditor actionHandler = new ActionPanelRendererAndEditor(booksTable);
-        columnModel.getColumn(5).setCellRenderer(actionHandler); // Update indeks kolom aksi
-        columnModel.getColumn(5).setCellEditor(actionHandler); // Update indeks kolom aksi
+        columnModel.getColumn(5).setCellRenderer(actionHandler);
+        columnModel.getColumn(5).setCellEditor(actionHandler);
 
         JScrollPane scrollPane = new JScrollPane(booksTable);
-        mainPanel.add(scrollPane, BorderLayout.CENTER);
+        add(scrollPane, BorderLayout.CENTER);
 
-        // ... (Panel tombol bawah tidak berubah)
-        JPanel bottomPanel = new JPanel(new BorderLayout());
+        JPanel bottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         bottomPanel.setOpaque(false);
         JButton refreshButton = new JButton("Refresh Daftar");
         styleActionButton(refreshButton, primaryColor, 140, 35);
         refreshButton.addActionListener(e -> loadAllBooks());
-        JButton backButton = new JButton("Kembali ke Dashboard");
-        styleActionButton(backButton, neutralColor, 180, 35);
-        backButton.addActionListener(e -> dispose()); 
-        JPanel leftBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        leftBottomPanel.setOpaque(false);
-        leftBottomPanel.add(refreshButton);
-        JPanel rightBottomPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        rightBottomPanel.setOpaque(false);
-        rightBottomPanel.add(backButton);
-        bottomPanel.add(leftBottomPanel, BorderLayout.WEST);
-        bottomPanel.add(rightBottomPanel, BorderLayout.EAST);
-        mainPanel.add(bottomPanel, BorderLayout.SOUTH);
-
-        add(mainPanel);
+        bottomPanel.add(refreshButton);
+        
+        // ❌ Tombol Kembali dihapus, hanya menyisakan tombol Refresh
+        add(bottomPanel, BorderLayout.SOUTH);
     }
 
-    private void loadAllBooks() {
+    // Method loadAllBooks tidak berubah
+    public void loadAllBooks() {
         tableModel.setRowCount(0); 
         List<Book> allBooks = bookDAO.getAllBooks(); 
 
@@ -111,12 +97,11 @@ public class BookManagementScreen extends JFrame {
             tableModel.addRow(new Object[]{"-", "Tidak ada buku di database", "-", "-", "-", null});
         } else {
             for (Book book : allBooks) {
-                // ✅ TAMBAHKAN DATA ISBN KE BARIS
                 tableModel.addRow(new Object[]{
                     book.getIdBook(),
                     book.getTitle(),
                     book.getAuthor(),
-                    book.getIsbn(), // Data ISBN
+                    book.getIsbn(),
                     String.format("%.1f", book.getRating()),
                     "Aksi"
                 });
@@ -124,7 +109,6 @@ public class BookManagementScreen extends JFrame {
         }
     }
     
-    // ... (method styleActionButton tetap sama)
     private void styleActionButton(JButton button, Color bgColor, int width, int height) {
         button.setBackground(bgColor);
         button.setForeground(Color.WHITE);
@@ -145,12 +129,12 @@ public class BookManagementScreen extends JFrame {
     }
 
     class ActionPanelRendererAndEditor extends AbstractCellEditor implements TableCellRenderer, TableCellEditor, ActionListener {
-        // ... (isi inner class ini tidak ada perubahan)
         private JPanel panel;
         private JButton editButton;
         private JButton deleteButton;
         private JTable table;
         private int currentRow; 
+        
         public ActionPanelRendererAndEditor(JTable table) {
             this.table = table;
             panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
@@ -166,6 +150,7 @@ public class BookManagementScreen extends JFrame {
             panel.add(editButton);
             panel.add(deleteButton);
         }
+
         private void styleActionButton(JButton button, Color bgColor, int width, int height) {
             button.setBackground(bgColor);
             button.setForeground(Color.WHITE);
@@ -176,27 +161,35 @@ public class BookManagementScreen extends JFrame {
             button.setOpaque(true);
             button.setBorderPainted(false);
         }
+
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
             return panel;
         }
+
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
             this.currentRow = row;
             return panel;
         }
+
         @Override
         public Object getCellEditorValue() { return null; }
+
         @Override
         public void actionPerformed(ActionEvent e) {
             fireEditingStopped(); 
             int bookId = (int) table.getModel().getValueAt(this.currentRow, 0);
             String command = e.getActionCommand();
             if ("edit".equals(command)) { 
-                // Kita asumsikan EditBookScreen akan kita perbaiki selanjutnya
-                new EditBookScreen(BookManagementScreen.this, bookId);
+                // ✅✅✅ PERBAIKAN PENTING DI SINI ✅✅✅
+                // Mengambil frame utama (Dashboard) untuk menjadi 'owner' dari dialog Edit
+                Window topFrame = SwingUtilities.getWindowAncestor(BookManagementScreen.this);
+                // Kita asumsikan EditBookScreen juga butuh Frame owner
+                new EditBookScreen((Frame) topFrame, bookId);
                 loadAllBooks();
+
             } else if ("delete".equals(command)) {
                 String bookTitle = (String) table.getModel().getValueAt(this.currentRow, 1);
                 int confirm = JOptionPane.showConfirmDialog(table, 
